@@ -1,0 +1,234 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { useCallback, useState } from "react";
+import { Upload, FileSpreadsheet, X, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+
+export default function NewQuestionnairePage() {
+  const [dragActive, setDragActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) validateAndSetFile(droppedFile);
+  }, []);
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) validateAndSetFile(selectedFile);
+  };
+
+  const validateAndSetFile = (f: File) => {
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "text/csv",
+    ];
+    const validExtensions = [".xlsx", ".xls", ".csv"];
+    const hasValidExt = validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext));
+
+    if (validTypes.includes(f.type) || hasValidExt) {
+      setFile(f);
+    } else {
+      alert("Please upload a .xlsx or .csv file");
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    // Simulate upload
+    await new Promise((r) => setTimeout(r, 2000));
+    setUploading(false);
+    setUploaded(true);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h2 className="font-heading text-2xl font-bold">Upload Questionnaire</h2>
+        <p className="text-light-2 text-sm mt-1">
+          Upload a .xlsx or .csv security questionnaire to get AI-generated draft answers.
+        </p>
+      </motion.div>
+
+      {/* Upload zone */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        {!file ? (
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`
+              relative rounded-2xl border-2 border-dashed p-12 text-center
+              transition-all duration-300 cursor-pointer
+              ${
+                dragActive
+                  ? "border-brand bg-brand/[0.04] scale-[1.01]"
+                  : "border-white/[0.08] bg-dark-3/30 hover:border-white/[0.15] hover:bg-dark-3/50"
+              }
+            `}
+            onClick={() => document.getElementById("file-input")?.click()}
+          >
+            <input
+              id="file-input"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+            <div className={`
+              w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center
+              ${dragActive ? "bg-brand/15" : "bg-white/[0.04]"}
+              transition-colors
+            `}>
+              <Upload className={`w-7 h-7 ${dragActive ? "text-brand" : "text-light-3"} transition-colors`} />
+            </div>
+            <p className="text-base font-medium text-light mb-1.5">
+              {dragActive ? "Drop your file here" : "Drag & drop your questionnaire"}
+            </p>
+            <p className="text-sm text-light-3 mb-4">
+              or click to browse files
+            </p>
+            <div className="flex items-center justify-center gap-3 text-xs text-light-4">
+              <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.xlsx</span>
+              <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.csv</span>
+              <span className="text-light-4">Max 25MB</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/[0.08] bg-dark-3/30 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+                <FileSpreadsheet className="w-6 h-6 text-brand" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-light truncate">{file.name}</p>
+                <p className="text-xs text-light-3">{formatFileSize(file.size)}</p>
+              </div>
+              {!uploading && !uploaded && (
+                <button
+                  onClick={() => setFile(null)}
+                  className="p-2 text-light-4 hover:text-light-2 rounded-lg hover:bg-white/[0.04] transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {uploaded && (
+                <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
+              )}
+            </div>
+
+            {/* Upload progress */}
+            {uploading && (
+              <div className="mt-4">
+                <div className="h-1.5 rounded-full bg-dark-4 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-brand to-amber-500 rounded-full animate-shimmer" style={{ width: "70%" }} />
+                </div>
+                <p className="text-xs text-light-3 mt-2 flex items-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Uploading and parsing...
+                </p>
+              </div>
+            )}
+
+            {uploaded && (
+              <div className="mt-4 p-4 rounded-xl bg-success/[0.05] border border-success/20">
+                <p className="text-sm text-success font-medium">✓ File parsed successfully</p>
+                <p className="text-xs text-light-3 mt-1">87 questions detected across 3 sheets</p>
+              </div>
+            )}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Actions */}
+      {file && !uploading && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-end gap-3"
+        >
+          {!uploaded ? (
+            <button
+              onClick={handleUpload}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+            >
+              Upload & Parse
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                // Navigate to generate
+                window.location.href = "/dashboard/questionnaires/1";
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+            >
+              Generate AI Answers
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </motion.div>
+      )}
+
+      {/* Help text */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="rounded-2xl bg-dark-3/30 border border-white/[0.06] p-5"
+      >
+        <h4 className="font-heading text-sm font-semibold mb-3">📋 Tips for best results</h4>
+        <ul className="space-y-2 text-sm text-light-3">
+          <li className="flex items-start gap-2">
+            <span className="text-brand mt-1">•</span>
+            Ensure each question is in a separate row
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-brand mt-1">•</span>
+            Column headers like &quot;Question&quot;, &quot;Requirement&quot;, or &quot;Control&quot; help auto-detection
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-brand mt-1">•</span>
+            Upload your security policies to the Knowledge Base first for better AI answers
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-brand mt-1">•</span>
+            Multi-sheet files are supported — we&apos;ll detect questions across all sheets
+          </li>
+        </ul>
+      </motion.div>
+    </div>
+  );
+}
