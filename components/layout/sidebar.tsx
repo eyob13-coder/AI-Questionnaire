@@ -12,12 +12,12 @@ import {
   CreditCard,
   ScrollText,
   Settings,
-  Shield,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Plus,
 } from "lucide-react";
+import { VaultixIcon } from "@/components/ui/vaultix-icon";
 
 const mainNav = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -54,11 +54,11 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center shadow-lg shadow-brand/20 shrink-0">
-          <Shield className="w-5 h-5 text-white" />
+          <VaultixIcon className="w-5 h-5" />
         </div>
         {!collapsed && (
           <span className="font-heading text-lg font-bold tracking-tight whitespace-nowrap">
-            Shield<span className="text-brand">AI</span>
+            Vault<span className="text-brand">ix</span>
           </span>
         )}
       </div>
@@ -90,10 +90,9 @@ export default function Sidebar() {
                 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                 transition-all duration-200 group
                 ${collapsed ? "justify-center" : ""}
-                ${
-                  isActive(item.href)
-                    ? "bg-brand/10 text-brand border border-brand/20"
-                    : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
+                ${isActive(item.href)
+                  ? "bg-brand/10 text-brand border border-brand/20"
+                  : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
                 }
               `}
               title={collapsed ? item.label : undefined}
@@ -115,10 +114,9 @@ export default function Sidebar() {
                 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                 transition-all duration-200 group
                 ${collapsed ? "justify-center" : ""}
-                ${
-                  isActive(item.href)
-                    ? "bg-brand/10 text-brand border border-brand/20"
-                    : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
+                ${isActive(item.href)
+                  ? "bg-brand/10 text-brand border border-brand/20"
+                  : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
                 }
               `}
               title={collapsed ? item.label : undefined}

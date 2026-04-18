@@ -112,6 +112,35 @@ export default function KnowledgeBasePage() {
           <span></span>
         </div>
 
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-dark-4/60 border border-white/[0.06] flex items-center justify-center mb-5">
+              <BookOpen className="w-7 h-7 text-light-4" />
+            </div>
+            {search ? (
+              <>
+                <p className="text-base font-semibold text-light mb-2">No documents found</p>
+                <p className="text-sm text-light-3 max-w-xs">No documents match &ldquo;{search}&rdquo;. Try a different search term.</p>
+                <button onClick={() => setSearch("")} className="mt-5 text-sm text-brand hover:text-brand-light font-medium transition-colors">Clear search</button>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-semibold text-light mb-2">Your knowledge base is empty</p>
+                <p className="text-sm text-light-3 max-w-xs mb-6">
+                  Upload your security policies, architecture docs, and compliance reports. The more you add, the more accurate the AI answers.
+                </p>
+                <button
+                  onClick={() => document.getElementById("kb-upload")?.click()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload your first document
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         {filtered.map((doc) => {
           const cfg = statusConfig[doc.status];
           const StatusIcon = cfg.icon;

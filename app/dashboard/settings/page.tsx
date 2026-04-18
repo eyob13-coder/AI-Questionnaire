@@ -41,7 +41,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm text-light-2 mb-1.5">Workspace Slug</label>
             <div className="flex items-center gap-0 rounded-xl bg-dark-4/50 border border-white/[0.06] overflow-hidden">
-              <span className="px-3 py-2.5 text-sm text-light-3 bg-dark-5/50 border-r border-white/[0.06]">shieldai.app/</span>
+              <span className="px-3 py-2.5 text-sm text-light-3 bg-dark-5/50 border-r border-white/[0.06]">vaultix.app/</span>
               <input
                 type="text"
                 defaultValue="acme-security"

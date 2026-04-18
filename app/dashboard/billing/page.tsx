@@ -96,11 +96,10 @@ export default function BillingPage() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`rounded-2xl p-5 flex flex-col ${
-                plan.current
+              className={`rounded-2xl p-5 flex flex-col ${plan.current
                   ? "border-2 border-brand bg-dark-3/50 glow-brand-sm"
                   : "border border-white/[0.06] bg-dark-3/30 hover:border-white/[0.1]"
-              } transition-all`}
+                } transition-all`}
             >
               <h4 className="font-heading text-base font-bold">{plan.name}</h4>
               <div className="mt-2 mb-4">
@@ -116,11 +115,10 @@ export default function BillingPage() {
                 ))}
               </ul>
               <button
-                className={`w-full py-2.5 rounded-full text-sm font-semibold transition-all ${
-                  plan.current
+                className={`w-full py-2.5 rounded-full text-sm font-semibold transition-all ${plan.current
                     ? "bg-white/[0.06] text-light-3 cursor-default"
                     : "bg-brand hover:bg-brand-hover text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
-                }`}
+                  }`}
                 disabled={plan.current}
               >
                 {plan.current ? "Current Plan" : plan.price === "Custom" ? "Contact Sales" : "Upgrade"}

@@ -10,6 +10,22 @@ export default function NewQuestionnairePage() {
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
 
+  const validateAndSetFile = useCallback((f: File) => {
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "text/csv",
+    ];
+    const validExtensions = [".xlsx", ".xls", ".csv"];
+    const hasValidExt = validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext));
+
+    if (validTypes.includes(f.type) || hasValidExt) {
+      setFile(f);
+    } else {
+      alert("Please upload a .xlsx or .csv file");
+    }
+  }, []);
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -26,27 +42,11 @@ export default function NewQuestionnairePage() {
     setDragActive(false);
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) validateAndSetFile(droppedFile);
-  }, []);
+  }, [validateAndSetFile]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) validateAndSetFile(selectedFile);
-  };
-
-  const validateAndSetFile = (f: File) => {
-    const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-      "text/csv",
-    ];
-    const validExtensions = [".xlsx", ".xls", ".csv"];
-    const hasValidExt = validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext));
-
-    if (validTypes.includes(f.type) || hasValidExt) {
-      setFile(f);
-    } else {
-      alert("Please upload a .xlsx or .csv file");
-    }
   };
 
   const handleUpload = async () => {
@@ -92,10 +92,9 @@ export default function NewQuestionnairePage() {
             className={`
               relative rounded-2xl border-2 border-dashed p-12 text-center
               transition-all duration-300 cursor-pointer
-              ${
-                dragActive
-                  ? "border-brand bg-brand/[0.04] scale-[1.01]"
-                  : "border-white/[0.08] bg-dark-3/30 hover:border-white/[0.15] hover:bg-dark-3/50"
+              ${dragActive
+                ? "border-brand bg-brand/[0.04] scale-[1.01]"
+                : "border-white/[0.08] bg-dark-3/30 hover:border-white/[0.15] hover:bg-dark-3/50"
               }
             `}
             onClick={() => document.getElementById("file-input")?.click()}

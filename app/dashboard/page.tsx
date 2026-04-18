@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 import {
   FileSpreadsheet,
   Upload,
@@ -12,6 +13,8 @@ import {
   ArrowRight,
   AlertTriangle,
   Eye,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 /* ── Mock data ── */
@@ -37,9 +40,112 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   draft: { label: "Draft", class: "bg-light-4/10 text-light-3" },
 };
 
+function OnboardingChecklist() {
+  const steps = [
+    { id: "kb", label: "Upload your first document", desc: "Add a policy or architecture doc to power AI answers.", href: "/dashboard/knowledge", icon: BookOpen },
+    { id: "q", label: "Upload a questionnaire", desc: "Drop an .xlsx or .csv file to get AI-generated answers.", href: "/dashboard/questionnaires/new", icon: Upload },
+    { id: "r", label: "Review your first AI answer", desc: "Approve, edit, or regenerate — then export.", href: "/dashboard/questionnaires", icon: CheckCircle2 },
+  ];
+
+  const [completed, setCompleted] = useState<string[]>([]);
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  const doneCount = completed.length;
+  const allDone = doneCount === steps.length;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.35 }}
+        className="relative rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/[0.07] via-dark-3/40 to-transparent overflow-hidden"
+      >
+        {/* Top gradient line */}
+        <div className="h-[2px] bg-gradient-to-r from-brand via-orange-400 to-amber-500" />
+
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-brand/15 border border-brand/25 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-brand" />
+              </div>
+              <div>
+                <h3 className="font-heading text-sm font-semibold">Get started with Vaultix</h3>
+                <p className="text-xs text-light-3 mt-0.5">{doneCount} of {steps.length} steps complete</p>
+              </div>
+            </div>
+            <button onClick={() => setDismissed(true)} className="p-1 text-light-4 hover:text-light-2 rounded-lg transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-1 rounded-full bg-dark-4 mb-5 overflow-hidden">
+            <motion.div
+              animate={{ width: `${(doneCount / steps.length) * 100}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="h-full rounded-full bg-gradient-to-r from-brand to-amber-400"
+            />
+          </div>
+
+          {/* Steps */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {steps.map((step) => {
+              const done = completed.includes(step.id);
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.id}
+                  className={`relative rounded-xl border p-4 transition-all duration-200 ${done
+                      ? "border-success/25 bg-success/[0.04]"
+                      : "border-white/[0.06] bg-dark-3/30 hover:border-white/[0.12]"
+                    }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => setCompleted(c => done ? c.filter(x => x !== step.id) : [...c, step.id])}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${done ? "border-success bg-success" : "border-white/20 hover:border-brand/50"
+                        }`}
+                    >
+                      {done && <CheckCircle2 className="w-3 h-3 text-white" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-semibold ${done ? "text-light-3 line-through" : "text-light"}`}>{step.label}</p>
+                      <p className="text-[11px] text-light-4 mt-0.5 leading-relaxed">{step.desc}</p>
+                      {!done && (
+                        <Link href={step.href} className="inline-flex items-center gap-1 mt-2 text-[11px] text-brand hover:text-brand-light font-medium transition-colors">
+                          Start <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {allDone && (
+            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-2 text-xs text-success">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="font-medium">You&apos;re all set! Dismiss this when you&apos;re ready.</span>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
+      {/* Onboarding */}
+      <OnboardingChecklist />
+
       {/* Welcome */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

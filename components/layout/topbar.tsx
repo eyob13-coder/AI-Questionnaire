@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Search, Menu, Shield } from "lucide-react";
+import { Bell, Search, Menu } from "lucide-react";
 import Link from "next/link";
+import { VaultixIcon } from "@/components/ui/vaultix-icon";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -48,7 +49,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
           <Link href="/dashboard" className="lg:hidden flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
+              <VaultixIcon className="w-4 h-4" />
             </div>
           </Link>
 

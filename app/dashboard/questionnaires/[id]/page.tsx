@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import {
   ArrowLeft, Download, RefreshCw, Check, CheckCircle2,
-  Search, Filter, ChevronDown, Eye, Edit3, Sparkles,
+  Search, Edit3,
   FileText, ExternalLink, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 /* ── Mock data ── */
-const questionnaireInfo = {
+const questionnaireInfoTemplate = {
   name: "SOC2 Type II Audit - Acme Corp",
   file: "SOC2_Security_Questionnaire.xlsx",
   totalQuestions: 87,
@@ -109,11 +110,19 @@ const statusFilters = [
 ];
 
 export default function QuestionnaireReviewPage() {
+  const params = useParams<{ id?: string | string[] }>();
+  const routeId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const questionnaireId = routeId ?? "unknown";
+
+  const questionnaireInfo = {
+    ...questionnaireInfoTemplate,
+    name: `${questionnaireInfoTemplate.name} #${questionnaireId}`,
+  };
+
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [answers, setAnswers] = useState(mockAnswers);
 
   const filtered = answers.filter((a) => {
@@ -185,7 +194,9 @@ export default function QuestionnaireReviewPage() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
             <h2 className="font-heading text-xl sm:text-2xl font-bold">{questionnaireInfo.name}</h2>
-            <p className="text-sm text-light-3 mt-1 font-mono">{questionnaireInfo.file}</p>
+            <p className="text-sm text-light-3 mt-1 font-mono">
+              {questionnaireInfo.file} · ID: {questionnaireId}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-light-2 border border-white/[0.08] rounded-full hover:bg-white/[0.04] transition">
@@ -226,11 +237,10 @@ export default function QuestionnaireReviewPage() {
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  filter === f.value
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filter === f.value
                     ? "bg-brand/10 text-brand border border-brand/20"
                     : "bg-dark-3/50 text-light-3 border border-white/[0.06] hover:text-light-2"
-                }`}
+                  }`}
               >
                 {f.label} ({count})
               </button>
@@ -303,9 +313,8 @@ export default function QuestionnaireReviewPage() {
           <div key={row.id} className="border-b border-white/[0.04]">
             {/* Main row */}
             <div
-              className={`grid grid-cols-1 lg:grid-cols-[40px_30px_1fr_1fr_70px_90px_60px] gap-2 lg:gap-3 px-4 lg:px-5 py-4 hover:bg-white/[0.015] transition-colors items-start cursor-pointer ${
-                expandedRow === row.id ? "bg-white/[0.02]" : ""
-              }`}
+              className={`grid grid-cols-1 lg:grid-cols-[40px_30px_1fr_1fr_70px_90px_60px] gap-2 lg:gap-3 px-4 lg:px-5 py-4 hover:bg-white/[0.015] transition-colors items-start cursor-pointer ${expandedRow === row.id ? "bg-white/[0.02]" : ""
+                }`}
               onClick={() => setExpandedRow(expandedRow === row.id ? null : row.id)}
             >
               <div className="hidden lg:flex items-center justify-center pt-0.5">
@@ -344,7 +353,6 @@ export default function QuestionnaireReviewPage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingId(row.id);
                   }}
                   className="p-1.5 text-light-4 hover:text-light-2 rounded-lg hover:bg-white/[0.04] transition"
                   title="Edit"
