@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShieldAI — Complete Security Questionnaires 10x Faster",
+  title: "Vaultix — Complete Security Questionnaires 10x Faster",
   description:
     "AI-powered security questionnaire autofill with citations, confidence scoring, and full audit trails. Help your SaaS team close deals faster.",
 };
