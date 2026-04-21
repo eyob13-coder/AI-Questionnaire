@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Eye, EyeOff, ArrowRight, Lock, Mail, CheckCircle2, BarChart3, Zap } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
+import { signIn } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const testimonial = {
     quote: "Vaultix cut our security questionnaire turnaround from 2 weeks to 2 hours. Absolutely game-changing for our sales cycle.",
@@ -25,21 +27,48 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [error, setError] = useState("");
+    const router = useRouter();
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await new Promise((r) => setTimeout(r, 1500));
-        setLoading(false);
+        setError("");
+
+        try {
+            const { error: signInError } = await signIn.email({
+                email,
+                password,
+                callbackURL: "/dashboard" // Or wherever you want to redirect after login
+            });
+
+            if (signInError) {
+                setError(signInError.message || "Failed to sign in");
+            } else {
+                router.push("/dashboard");
+            }
+        } catch (err: any) {
+            setError("An unexpected error occurred");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        await signIn.social({
+            provider: "google",
+            callbackURL: "/dashboard"
+        });
     };
 
     return (
         <div className="min-h-screen bg-dark flex">
             {/* ── Left panel: brand / social proof ── */}
-            <div className="hidden lg:flex flex-col justify-between w-[480px] xl:w-[520px] shrink-0 relative overflow-hidden bg-dark-2 border-r border-white/[0.04] p-12">
+            <div className="hidden lg:flex flex-col justify-between w-[480px] xl:w-[520px] shrink-0 relative overflow-hidden bg-dark-2 border-r `border-white/[0.04]` p-12">
                 {/* Background effects */}
                 <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-                <div className="absolute top-0 left-0 w-[400px] h-[400px] rounded-full bg-brand/[0.06] blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-brand/[0.04] blur-[80px] pointer-events-none" />
+                <div className="absolute top-0 left-0 w-[400px] h-[400px] rounded-full `bg-brand/[0.06]` blur-[100px] pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full `bg-brand/[0.04]` blur-[80px] pointer-events-none" />
 
                 {/* Logo */}
                 <motion.div
@@ -176,7 +205,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Google SSO */}
-                    <button className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-200 text-sm font-medium text-light mb-6 cursor-pointer">
+                    <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-200 text-sm font-medium text-light mb-6 cursor-pointer">
                         <svg className="w-4 h-4" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -188,12 +217,17 @@ export default function LoginPage() {
 
                     {/* Divider */}
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="flex-1 h-px bg-white/[0.06]" />
+                        <div className="flex-1 h-px `bg-white/[0.06]`" />
                         <span className="text-xs text-light-3 px-1">or continue with email</span>
-                        <div className="flex-1 h-px bg-white/[0.06]" />
+                        <div className="flex-1 h-px `bg-white/[0.06]`" />
                     </div>
 
                     {/* Form */}
+                    {error && (
+                        <div className="mb-4 p-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
+                            {error}
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Email */}
                         <div>

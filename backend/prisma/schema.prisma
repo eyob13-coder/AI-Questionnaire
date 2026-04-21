@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  extensions = [vector, prisma_postgres]
+}
+
+// ─── Users & Workspaces ───
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Custom fields
+  company       String?
+  avatarUrl     String?   @map("avatar_url") // Keep for legacy/custom use if needed
+
+  sessions      Session[]
+  accounts      Account[]
+  memberships   WorkspaceMember[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @map("created_at")
+  updatedAt             DateTime  @map("updated_at")
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime? @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+
+  @@map("verifications")
+}
+
+model Workspace {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  plan           Plan     @default(TRIAL)
+  trialEndsAt    DateTime? @map("trial_ends_at")
+  stripeCustomerId String? @map("stripe_customer_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  members        WorkspaceMember[]
+  documents      Document[]
+  questionnaires Questionnaire[]
+  auditLogs      AuditLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  role        Role     @default(EDITOR)
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String   @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+// ─── Knowledge Base ───
+
+model Document {
+  id             String   @id @default(cuid())
+  fileName       String   @map("file_name")
+  fileType       String   @map("file_type")
+  fileSize       Int      @map("file_size")
+  storagePath    String?  @map("storage_path")
+  status         DocumentStatus @default(PROCESSING)
+  pageCount      Int?     @map("page_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  workspaceId    String   @map("workspace_id")
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  chunks         DocumentChunk[]
+
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id             String   @id @default(cuid())
+  content        String
+  pageNumber     Int?     @map("page_number")
+  chunkIndex     Int      @map("chunk_index")
+  tokenCount     Int?     @map("token_count")
+  embedding      Unsupported("vector(768)")?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  documentId     String   @map("document_id")
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_chunks")
+}
+
+// ─── Questionnaires ───
+
+model Questionnaire {
+  id             String   @id @default(cuid())
+  name           String
+  fileName       String   @map("file_name")
+  fileType       String   @map("file_type")
+  status         QuestionnaireStatus @default(PROCESSING)
+  totalQuestions Int      @default(0) @map("total_questions")
+  answeredCount  Int      @default(0) @map("answered_count")
+  approvedCount  Int      @default(0) @map("approved_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  workspaceId    String   @map("workspace_id")
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  questions      Question[]
+
+  @@map("questionnaires")
+}
+
+model Question {
+  id             String   @id @default(cuid())
+  questionText   String   @map("question_text")
+  answerText     String?  @map("answer_text")
+  confidence     Float?
+  status         AnswerStatus @default(DRAFT)
+  rowIndex       Int      @map("row_index")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  questionnaireId String  @map("questionnaire_id")
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  citations      Citation[]
+
+  @@map("questions")
+}
+
+model Citation {
+  id             String   @id @default(cuid())
+  sourceDocument String   @map("source_document")
+  pageNumber     Int?     @map("page_number")
+  excerpt        String?
+
+  questionId     String   @map("question_id")
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("citations")
+}
+
+// ─── Audit Log ───
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entity      String
+  entityId    String?  @map("entity_id")
+  details     Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String   @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
+
+// ─── Enums ───
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum Plan {
+  TRIAL
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum QuestionnaireStatus {
+  PROCESSING
+  GENERATING
+  REVIEW
+  COMPLETED
+}
+
+enum AnswerStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+}

@@ -1,30 +1,57 @@
 @import "tailwindcss";
 
-@theme inline {
+:root {
   /* ── Brand Orange ── */
-  --color-brand: #F97316;
-  --color-brand-hover: #EA580C;
-  --color-brand-light: #FB923C;
-  --color-brand-muted: #7C2D12;
+  --custom-brand: #F97316;
+  --custom-brand-hover: #EA580C;
+  --custom-brand-light: #FB923C;
+  --custom-brand-muted: #7C2D12;
 
-  /* ── Surfaces (dark) ── */
-  --color-dark: #09090B;
-  --color-dark-2: #0F0F12;
-  --color-dark-3: #18181B;
-  --color-dark-4: #1F1F23;
-  --color-dark-5: #27272A;
+  /* ── Surfaces (dark default) ── */
+  --custom-dark: #09090B;
+  --custom-dark-2: #0F0F12;
+  --custom-dark-3: #18181B;
+  --custom-dark-4: #1F1F23;
+  --custom-dark-5: #27272A;
 
   /* ── Text ── */
-  --color-light: #FAFAFA;
-  --color-light-2: #A1A1AA;
-  --color-light-3: #71717A;
-  --color-light-4: #52525B;
+  --custom-light: #FAFAFA;
+  --custom-light-2: #A1A1AA;
+  --custom-light-3: #71717A;
+  --custom-light-4: #52525B;
 
   /* ── Status ── */
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #3B82F6;
+  --custom-success: #22C55E;
+  --custom-warning: #F59E0B;
+  --custom-danger: #EF4444;
+  --custom-info: #3B82F6;
+}
+
+@theme {
+  /* ── Brand Orange ── */
+  --color-brand: var(--custom-brand);
+  --color-brand-hover: var(--custom-brand-hover);
+  --color-brand-light: var(--custom-brand-light);
+  --color-brand-muted: var(--custom-brand-muted);
+
+  /* ── Surfaces (dark default) ── */
+  --color-dark: var(--custom-dark);
+  --color-dark-2: var(--custom-dark-2);
+  --color-dark-3: var(--custom-dark-3);
+  --color-dark-4: var(--custom-dark-4);
+  --color-dark-5: var(--custom-dark-5);
+
+  /* ── Text ── */
+  --color-light: var(--custom-light);
+  --color-light-2: var(--custom-light-2);
+  --color-light-3: var(--custom-light-3);
+  --color-light-4: var(--custom-light-4);
+
+  /* ── Status ── */
+  --color-success: var(--custom-success);
+  --color-warning: var(--custom-warning);
+  --color-danger: var(--custom-danger);
+  --color-info: var(--custom-info);
 
   /* ── Fonts ── */
   --font-heading: var(--font-space-grotesk);
@@ -38,7 +65,9 @@
   scrollbar-color: #27272A transparent;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   background-color: #09090B;
@@ -94,7 +123,7 @@ body {
 
 .glow-brand {
   box-shadow: 0 0 40px rgba(249, 115, 22, 0.15),
-              0 0 80px rgba(249, 115, 22, 0.05);
+    0 0 80px rgba(249, 115, 22, 0.05);
 }
 
 .glow-brand-sm {
@@ -106,6 +135,7 @@ body {
   position: relative;
   overflow: hidden;
 }
+
 .card-glow::before {
   content: '';
   position: absolute;
@@ -116,57 +146,281 @@ body {
   opacity: 0;
   transition: opacity 0.4s ease;
 }
+
 .card-glow:hover::before {
   opacity: 1;
 }
 
 /* ───────────── Animations ───────────── */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes shimmer {
-  from { background-position: -200% 0; }
-  to { background-position: 200% 0; }
+  from {
+    background-position: -200% 0;
+  }
+
+  to {
+    background-position: 200% 0;
+  }
 }
 
-.animate-float { animation: float 6s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-.animate-slide-up { animation: slide-up 0.6s ease-out both; }
-.animate-fade-in { animation: fade-in 0.4s ease-out both; }
+@keyframes theme-spin {
+  from {
+    transform: rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
 /* Staggered children */
-.stagger > * { opacity: 0; animation: slide-up 0.5s ease-out forwards; }
-.stagger > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger > *:nth-child(2) { animation-delay: 0.10s; }
-.stagger > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger > *:nth-child(4) { animation-delay: 0.20s; }
-.stagger > *:nth-child(5) { animation-delay: 0.25s; }
-.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger>* {
+  opacity: 0;
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.stagger>*:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stagger>*:nth-child(2) {
+  animation-delay: 0.10s;
+}
+
+.stagger>*:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stagger>*:nth-child(4) {
+  animation-delay: 0.20s;
+}
+
+.stagger>*:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.stagger>*:nth-child(6) {
+  animation-delay: 0.30s;
+}
 
 /* ───────────── Scrollbar (Webkit) ───────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #27272A; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* ═══════════════════════════════════════════════
+   LIGHT THEME — Warm Parchment Palette
+   A premium, editorial feel — stone/cream tones
+   that attract enterprise buyers
+   ═══════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  /* Surfaces — warm parchment progression */
+  --custom-dark: #F7F5F0;
+  --custom-dark-2: #EDE9E3;
+  --custom-dark-3: #E6E2DB;
+  --custom-dark-4: #DEDAC2;
+  --custom-dark-5: #D6D1C8;
+
+  /* Text — warm stone scale */
+  --custom-light: #1C1917;
+  --custom-light-2: #44403C;
+  --custom-light-3: #78716C;
+  --custom-light-4: #A8A29E;
+
+  /* Status — richer for light background readability */
+  --custom-success: #15803D;
+  --custom-warning: #B45309;
+  --custom-danger: #B91C1C;
+  --custom-info: #1D4ED8;
+}
+
+[data-theme="light"] body {
+  background-color: #F7F5F0;
+  color: #1C1917;
+  scrollbar-color: #D6D1C8 transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #D6D1C8;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #C9C4BA;
+}
+
+/* Flip the texture patterns to use dark strokes on light bg */
+[data-theme="light"] .bg-dots {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+[data-theme="light"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Glass surface */
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .glass-hover:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Softer glows on light bg */
+[data-theme="light"] .glow-brand {
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.10),
+    0 0 80px rgba(249, 115, 22, 0.04);
+}
+
+[data-theme="light"] .glow-brand-sm {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.08);
+}
+
+/* Text gradient override so it reads on warm bg */
+[data-theme="light"] .text-gradient-white {
+  background: linear-gradient(180deg, #1C1917 0%, #78716C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer — invert for light surfaces */
+[data-theme="light"] .animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.03), transparent);
+  background-size: 200% 100%;
+}
+
+/* ── White-opacity border overrides ──
+   Tailwind's border-white/[x] utilities emit rgba(255,255,255,x)
+   which are invisible on light backgrounds. We flip them to dark. */
+[data-theme="light"] [class*="border-white"] {
+  border-color: rgba(0, 0, 0, 0.09) !important;
+}
+
+/* border-overlay/* also needs flipping */
+[data-theme="light"] [class*="border-overlay"] {
+  border-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* White-opacity background fills (used in hover states, etc.) */
+[data-theme="light"] [class*="bg-white\\/"] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Horizontal rules and divider elements */
+[data-theme="light"] hr {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* divide-white/* utilities */
+[data-theme="light"] [class*="divide-white"]>*+* {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Input placeholder and focus rings */
+[data-theme="light"] input::placeholder {
+  color: #A8A29E;
+}
+
+/* Selection highlight stays warm */
+[data-theme="light"] ::selection {
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #1C1917;
+}
+
+/* Smooth theme transition */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

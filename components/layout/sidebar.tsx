@@ -17,20 +17,20 @@ import {
   LogOut,
   Plus,
 } from "lucide-react";
-import { VaultixIcon } from "@/components/ui/vaultix-icon";
+import Image from "next/image";
 
 const mainNav = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Questionnaires", icon: FileSpreadsheet, href: "/dashboard/questionnaires" },
-  { label: "Knowledge Base", icon: BookOpen, href: "/dashboard/knowledge" },
-  { label: "Exports", icon: Download, href: "/dashboard/exports" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", hoverClass: "group-hover:scale-110" },
+  { label: "Questionnaires", icon: FileSpreadsheet, href: "/dashboard/questionnaires", hoverClass: "group-hover:-translate-y-1" },
+  { label: "Knowledge Base", icon: BookOpen, href: "/dashboard/knowledge", hoverClass: "group-hover:-rotate-12" },
+  { label: "Exports", icon: Download, href: "/dashboard/exports", hoverClass: "group-hover:animate-bounce" },
 ];
 
 const bottomNav = [
-  { label: "Team & Roles", icon: Users, href: "/dashboard/team" },
-  { label: "Billing", icon: CreditCard, href: "/dashboard/billing" },
-  { label: "Audit Log", icon: ScrollText, href: "/dashboard/audit" },
-  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+  { label: "Team & Roles", icon: Users, href: "/dashboard/team", hoverClass: "group-hover:[transform:rotateY(180deg)]" },
+  { label: "Billing", icon: CreditCard, href: "/dashboard/billing", hoverClass: "group-hover:-rotate-6" },
+  { label: "Audit Log", icon: ScrollText, href: "/dashboard/audit", hoverClass: "group-hover:translate-x-1" },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings", hoverClass: "group-hover:rotate-90" },
 ];
 
 export default function Sidebar() {
@@ -52,30 +52,30 @@ export default function Sidebar() {
       `}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center shadow-lg shadow-brand/20 shrink-0">
-          <VaultixIcon className="w-5 h-5" />
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0 group overflow-hidden">
+        <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+          <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
         </div>
         {!collapsed && (
           <span className="font-heading text-lg font-bold tracking-tight whitespace-nowrap">
             Vault<span className="text-brand">ix</span>
           </span>
         )}
-      </div>
+      </Link>
 
       {/* New Questionnaire button */}
       <div className="px-3 mt-4 mb-2 shrink-0">
         <Link
           href="/dashboard/questionnaires/new"
           className={`
-            flex items-center gap-2 px-3 py-2.5 rounded-xl
+            flex items-center gap-2 px-3 py-2.5 rounded-xl group
             bg-brand hover:bg-brand-hover text-white text-sm font-semibold
             transition-all duration-200 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]
             ${collapsed ? "justify-center" : ""}
           `}
         >
-          <Plus className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>New Questionnaire</span>}
+          <Plus className="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
+          {!collapsed && <span className="transition-transform duration-300 group-hover:translate-x-0.5">New Questionnaire</span>}
         </Link>
       </div>
 
@@ -97,7 +97,7 @@ export default function Sidebar() {
               `}
               title={collapsed ? item.label : undefined}
             >
-              <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
+              <item.icon className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${item.hoverClass} ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           ))}
@@ -121,7 +121,7 @@ export default function Sidebar() {
               `}
               title={collapsed ? item.label : undefined}
             >
-              <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
+              <item.icon className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${item.hoverClass} ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           ))}

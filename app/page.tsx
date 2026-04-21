@@ -26,6 +26,23 @@ import {
   RefreshCw,
   Edit3,
   ExternalLink,
+  Shield,
+  TrendingUp,
+  BookOpen,
+  Mail,
+  Star,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  Minus,
+  Activity,
+  Database,
+  Cpu,
+  ArrowUpRight,
+  Filter,
+  Tag,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 
@@ -191,16 +208,55 @@ const resourcePosts = [
     title: "How to cut questionnaire review time by 60%",
     category: "Playbook",
     readTime: "6 min read",
+    description: "A step-by-step workflow used by top security teams to go from questionnaire upload to approved export in under a business day.",
+    featured: true,
+    date: "Mar 2026",
+    gradient: "from-brand/20 to-orange-700/10",
   },
   {
     title: "Build a citation-first AI security workflow",
     category: "Guide",
     readTime: "8 min read",
+    description: "Why citation-backed answers win audits, and how to configure your knowledge base for maximum answer coverage.",
+    featured: false,
+    date: "Feb 2026",
+    gradient: "from-info/20 to-blue-700/10",
   },
   {
     title: "What enterprise buyers ask in 2026 security reviews",
     category: "Research",
     readTime: "5 min read",
+    description: "Analysis of 3,400 real security questionnaire questions across fintech, healthcare, and B2B SaaS deals.",
+    featured: false,
+    date: "Jan 2026",
+    gradient: "from-success/20 to-green-700/10",
+  },
+  {
+    title: "SOC 2 questionnaire starter template",
+    category: "Template",
+    readTime: "Free download",
+    description: "Pre-filled SOC 2 Type II questionnaire with 120 questions mapped to common trust service criteria.",
+    featured: false,
+    date: "Dec 2025",
+    gradient: "from-warning/20 to-yellow-700/10",
+  },
+  {
+    title: "How Meridian Cloud closed 4 enterprise deals in one quarter",
+    category: "Case Study",
+    readTime: "4 min read",
+    description: "Reducing security review cycles from 3 days to 4 hours unlocked a new tier of enterprise buyer for their sales team.",
+    featured: false,
+    date: "Nov 2025",
+    gradient: "from-purple-500/20 to-purple-800/10",
+  },
+  {
+    title: "Confidence scoring explained: how Vaultix knows what it doesn't know",
+    category: "Guide",
+    readTime: "7 min read",
+    description: "Deep dive into how confidence scores are calculated, calibrated, and why they beat simple hallucination detection.",
+    featured: false,
+    date: "Oct 2025",
+    gradient: "from-info/20 to-blue-700/10",
   },
 ];
 
@@ -278,9 +334,26 @@ export default function LandingPage() {
 /* ═══════ NAVBAR ═══════ */
 function Navbar() {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem("vaultix-theme") as "dark" | "light" | null;
+    const initial = saved ?? "dark";
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("vaultix-theme", next);
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-overlay/[0.06]">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06]">
       <div className="absolute inset-0 bg-dark/80 backdrop-blur-xl" />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -306,15 +379,53 @@ function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm text-light-2 hover:text-light rounded-lg hover:bg-white/[0.04] transition-all duration-200"
+                className="relative px-4 py-2 text-sm text-light-2 hover:text-light transition-colors duration-200 group"
               >
                 {link.label}
+                <span className="absolute bottom-1 left-4 right-4 h-[2px] bg-brand scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 ease-out rounded-full" />
               </a>
             ))}
           </div>
 
           {/* Desktop actions */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            {/* Theme toggle */}
+            {mounted && (
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.08] bg-dark-4/60 hover:bg-dark-5/80 text-light-3 hover:text-light transition-all duration-200 hover:border-white/[0.16] group overflow-hidden"
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {theme === "dark" ? (
+                    <motion.span
+                      key="sun"
+                      initial={{ rotate: -90, scale: 0.6, opacity: 0 }}
+                      animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                      exit={{ rotate: 90, scale: 0.6, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <Sun className="w-4 h-4" />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="moon"
+                      initial={{ rotate: 90, scale: 0.6, opacity: 0 }}
+                      animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                      exit={{ rotate: -90, scale: 0.6, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <Moon className="w-4 h-4" />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {/* Subtle glow on hover */}
+                <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-brand/10 to-transparent" />
+              </button>
+            )}
+
             <Link
               href="/login"
               className="px-4 py-2 text-sm text-light-2 hover:text-light transition-colors"
@@ -329,13 +440,49 @@ function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden p-2 text-light-2 hover:text-light rounded-lg"
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {/* Mobile right side */}
+          <div className="md:hidden flex items-center gap-2">
+            {/* Mobile theme toggle */}
+            {mounted && (
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="relative w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.08] bg-dark-4/60 text-light-3 hover:text-light transition-all overflow-hidden"
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {theme === "dark" ? (
+                    <motion.span
+                      key="sun-m"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <Sun className="w-3.5 h-3.5" />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="moon-m"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <Moon className="w-3.5 h-3.5" />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+            )}
+            <button
+              onClick={() => setOpen(!open)}
+              className="p-2 text-light-2 hover:text-light rounded-lg"
+            >
+              {open ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -344,7 +491,7 @@ function Navbar() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:hidden relative bg-dark-2 border-b border-overlay/[0.06] px-4 py-5"
+          className="md:hidden relative bg-dark-2 border-b border-white/[0.06] px-4 py-5"
         >
           <div className="flex flex-col gap-3">
             <a
@@ -382,7 +529,7 @@ function Navbar() {
             >
               Why Vaultix
             </a>
-            <hr className="border-overlay/[0.06]" />
+            <hr className="border-white/[0.06]" />
             <Link
               href="/login"
               className="px-3 py-2 text-light-2 hover:text-light transition-colors"
@@ -1521,98 +1668,239 @@ function Stats() {
 /* ═══════ TESTIMONIALS ═══════ */
 function AccuracyProof() {
   const proofStats = [
-    { value: "87%", label: "Unedited answers approved" },
-    { value: "2.4x", label: "Faster security reviews" },
-    { value: "< 15m", label: "Median first draft time" },
-    { value: "99.9%", label: "Answer traceability coverage" },
+    { value: "87%", label: "Answers approved unedited", sub: "vs 12% industry average", color: "brand", icon: CheckCircle2 },
+    { value: "2.4x", label: "Faster security reviews", sub: "end-to-end cycle time", color: "info", icon: TrendingUp },
+    { value: "<15m", label: "Median first draft", sub: "from upload to complete", color: "success", icon: Zap },
+    { value: "99.9%", label: "Answer traceability", sub: "full source coverage", color: "warning", icon: Shield },
+  ];
+
+  const liveItems = [
+    { org: "MC", orgName: "Meridian Cloud", q: "Do you encrypt all data at rest?", conf: 96, status: "Approved" },
+    { org: "LS", orgName: "Lattice Systems", q: "Describe your incident response process", conf: 82, status: "In Review" },
+    { org: "NX", orgName: "Nexlify", q: "What is your penetration testing cadence?", conf: 91, status: "Approved" },
+    { org: "AC", orgName: "Acme Corp", q: "Do you have a Business Continuity Plan?", conf: 88, status: "Approved" },
+    { org: "TC", orgName: "TechCo", q: "How do you handle data subject requests?", conf: 28, status: "Flagged" },
+  ];
+
+  const pillars = [
+    { label: "Answer Quality", desc: "Confidence + citation checks before any answer is approved or exported", icon: CheckCircle2 },
+    { label: "Smart Routing", desc: "Low-confidence answers are auto-queued for human review — nothing slips through", icon: Activity },
+    { label: "Audit Readiness", desc: "Every edit, approval, and export captured in a timestamped timeline log", icon: FileCheck },
   ];
 
   return (
-    <section id="proof" className="relative py-24 sm:py-32">
+    <section id="proof" className="relative py-24 sm:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-dark-2" />
-      <div className="absolute inset-0 bg-dots opacity-[0.16]" />
+      <div className="absolute inset-0 bg-dots opacity-[0.14]" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand/[0.035] blur-[130px] pointer-events-none" />
+      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-info/[0.035] blur-[130px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div {...fadeUp} className="text-center mb-14">
-          <span className="inline-block text-brand text-sm font-semibold tracking-wider uppercase mb-4">
-            Proof
+        {/* Header */}
+        <motion.div {...fadeUp} className="text-center mb-16">
+          <span className="inline-flex items-center gap-2 bg-brand/10 border border-brand/20 text-brand text-xs font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+            Verified Proof
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
             Metrics teams can defend
             <span className="text-gradient-brand"> in audits and board reviews</span>
           </h2>
           <p className="mt-4 text-light-2 text-lg max-w-2xl mx-auto">
-            Vaultix prioritizes verifiable answers, not just fast text generation.
+            Vaultix prioritizes verifiable, citation-backed answers — not just fast text generation.
           </p>
         </motion.div>
 
+        {/* Stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {proofStats.map((item, i) => (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
-              className="rounded-2xl bg-dark-3/50 border border-white/[0.06] p-5"
-            >
-              <p className="font-heading text-2xl sm:text-3xl font-bold text-gradient-brand">{item.value}</p>
-              <p className="text-xs sm:text-sm text-light-3 mt-2">{item.label}</p>
-            </motion.div>
-          ))}
+          {proofStats.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="relative group rounded-2xl bg-dark-3/60 border border-white/[0.06] p-6 overflow-hidden hover:border-white/[0.14] transition-all duration-300 cursor-default"
+              >
+                <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500 ${stat.color === "brand" ? "bg-brand" :
+                    stat.color === "info" ? "bg-info" :
+                      stat.color === "success" ? "bg-success" : "bg-warning"
+                  }`} />
+                <div className={`absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-transparent ${stat.color === "brand" ? "via-brand/60" :
+                    stat.color === "info" ? "via-info/60" :
+                      stat.color === "success" ? "via-success/60" : "via-warning/60"
+                  } to-transparent`} />
+                <div className="relative">
+                  <Icon className={`w-5 h-5 mb-3 ${stat.color === "brand" ? "text-brand" :
+                      stat.color === "info" ? "text-info" :
+                        stat.color === "success" ? "text-success" : "text-warning"
+                    }`} />
+                  <p className={`font-heading text-3xl sm:text-4xl font-bold mb-1 ${stat.color === "brand" ? "text-brand" :
+                      stat.color === "info" ? "text-info" :
+                        stat.color === "success" ? "text-success" : "text-warning"
+                    }`}>{stat.value}</p>
+                  <p className="text-sm font-semibold text-light">{stat.label}</p>
+                  <p className="text-xs text-light-4 mt-0.5">{stat.sub}</p>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
+        {/* Live approval stream */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="rounded-2xl border border-white/[0.08] bg-dark-3/40 overflow-hidden"
+          transition={{ duration: 0.6 }}
+          className="rounded-2xl border border-white/[0.08] bg-dark-3/40 overflow-hidden mb-5"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 text-sm">
-            <div className="p-5 border-b md:border-b-0 md:border-r border-white/[0.06]">
-              <p className="text-light-4 uppercase text-xs tracking-wider mb-2">Answer quality</p>
-              <p className="text-light font-semibold">Confidence + citation checks before approval</p>
+          <div className="flex items-center gap-3 px-5 py-3.5 border-b border-white/[0.06] bg-dark-4/50">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-xs font-medium text-light-3">Live verification stream</span>
             </div>
-            <div className="p-5 border-b md:border-b-0 md:border-r border-white/[0.06]">
-              <p className="text-light-4 uppercase text-xs tracking-wider mb-2">Review speed</p>
-              <p className="text-light font-semibold">Low-confidence answers auto-routed to reviewers</p>
-            </div>
-            <div className="p-5">
-              <p className="text-light-4 uppercase text-xs tracking-wider mb-2">Audit readiness</p>
-              <p className="text-light font-semibold">Every edit and export captured in timeline logs</p>
-            </div>
+            <div className="flex-1 h-px bg-white/[0.04]" />
+            <span className="text-xs text-light-4">Real-time answer approvals</span>
+          </div>
+
+          <div className="divide-y divide-white/[0.04]">
+            {liveItems.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: 0.3 + i * 0.07 }}
+                className="flex items-center gap-3 sm:gap-4 px-5 py-3.5 hover:bg-white/[0.015] transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-dark-5 border border-white/[0.06] flex items-center justify-center text-[10px] font-bold text-light-3 shrink-0">
+                  {item.org}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-light-4 mb-0.5 hidden sm:block">{item.orgName}</p>
+                  <p className="text-sm text-light-2 truncate">{item.q}</p>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    <div className="w-16 h-1.5 rounded-full bg-dark-5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${item.conf >= 85 ? "bg-success" : item.conf >= 60 ? "bg-warning" : "bg-danger"}`}
+                        style={{ width: `${item.conf}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-light-4 w-7">{item.conf}%</span>
+                  </div>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap ${item.status === "Approved" ? "bg-success/10 text-success border border-success/20" :
+                      item.status === "In Review" ? "bg-info/10 text-info border border-info/20" :
+                        "bg-danger/10 text-danger border border-danger/20"
+                    }`}>
+                    {item.status}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
+
+        {/* 3 pillars */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {pillars.map((p, i) => {
+            const Icon = p.icon;
+            return (
+              <motion.div
+                key={p.label}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.5 + i * 0.1 }}
+                className="flex items-start gap-3.5 p-5 rounded-xl bg-dark-3/30 border border-white/[0.05]"
+              >
+                <div className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0">
+                  <Icon className="w-4.5 h-4.5 text-brand" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-light mb-1">{p.label}</p>
+                  <p className="text-xs text-light-3 leading-relaxed">{p.desc}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
 }
 
 function KnowledgeEngine() {
+  const [hoveredCol, setHoveredCol] = useState<number | null>(null);
+
   const columns = [
     {
+      stage: "01",
       title: "Inputs",
-      items: ["Policies and standards", "Architecture docs", "Past approved answers", "Control mappings"],
+      subtitle: "Your security knowledge, organized",
+      icon: Database,
+      accentColor: "info",
+      borderColor: "border-info/20",
+      glowColor: "bg-info/[0.06]",
+      iconBg: "bg-info/10 border-info/20",
+      iconColor: "text-info",
+      items: [
+        { label: "Policies and standards", detail: "ISO 27001, SOC 2, NIST" },
+        { label: "Architecture docs", detail: "System diagrams, data flows" },
+        { label: "Past approved answers", detail: "Reuse what already works" },
+        { label: "Control mappings", detail: "Link answers to frameworks" },
+      ],
     },
     {
+      stage: "02",
       title: "Engine",
-      items: ["Hybrid retrieval + reranking", "Citation-constrained generation", "Confidence calibration", "Policy drift detection"],
+      subtitle: "AI purpose-built for security",
+      icon: Cpu,
+      accentColor: "brand",
+      borderColor: "border-brand/30",
+      glowColor: "bg-brand/[0.06]",
+      iconBg: "bg-brand/10 border-brand/20",
+      iconColor: "text-brand",
+      items: [
+        { label: "Hybrid retrieval + reranking", detail: "BM25 + dense vector search" },
+        { label: "Citation-constrained generation", detail: "Never hallucinates sources" },
+        { label: "Confidence calibration", detail: "Scores tuned on security Q&A" },
+        { label: "Policy drift detection", detail: "Flags stale knowledge docs" },
+      ],
     },
     {
+      stage: "03",
       title: "Outputs",
-      items: ["Business-ready draft answers", "Linked evidence and excerpts", "Risk-based review queue", "Audit export metadata"],
+      subtitle: "Reviewer-ready, audit-proof answers",
+      icon: FileCheck,
+      accentColor: "success",
+      borderColor: "border-success/20",
+      glowColor: "bg-success/[0.06]",
+      iconBg: "bg-success/10 border-success/20",
+      iconColor: "text-success",
+      items: [
+        { label: "Business-ready draft answers", detail: "Professional tone, right length" },
+        { label: "Linked evidence excerpts", detail: "Source + page number inline" },
+        { label: "Risk-based review queue", detail: "Sorted by confidence score" },
+        { label: "Audit export metadata", detail: "Who approved, when, from what" },
+      ],
     },
   ];
 
   return (
     <section id="why-vaultix" className="relative py-24 sm:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-dark" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[760px] h-[360px] rounded-full bg-brand/[0.05] blur-[110px] pointer-events-none" />
+      <div className="absolute inset-0 bg-grid opacity-[0.06]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] rounded-full bg-brand/[0.04] blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div {...fadeUp} className="text-center mb-14">
-          <span className="inline-block text-brand text-sm font-semibold tracking-wider uppercase mb-4">
+        <motion.div {...fadeUp} className="text-center mb-16">
+          <span className="inline-flex items-center gap-2 bg-brand/10 border border-brand/20 text-brand text-xs font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full mb-5">
+            <Sparkles className="w-3.5 h-3.5" />
             Why Vaultix
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
@@ -1620,77 +1908,288 @@ function KnowledgeEngine() {
             <span className="text-gradient-brand"> not generic chat</span>
           </h2>
           <p className="mt-4 text-light-2 text-lg max-w-2xl mx-auto">
-            Multiple layers of evidence handling keep answers current, explainable, and reviewer-friendly.
+            Multiple layers of evidence handling keep answers current, explainable, and reviewer-ready.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {columns.map((col, i) => (
-            <motion.div
-              key={col.title}
-              initial={{ opacity: 0, y: 26 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl border border-white/[0.08] bg-dark-2/70 p-6"
-            >
-              <p className="font-heading text-lg font-semibold mb-4">{col.title}</p>
-              <ul className="space-y-2.5">
-                {col.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-light-2">
-                    <Check className="w-4 h-4 text-brand mt-0.5 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+        {/* Pipeline */}
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-0">
+          {/* Connector lines (desktop only) */}
+          <div className="hidden md:block absolute top-16 left-[33%] right-[33%] h-px z-10 pointer-events-none">
+            <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-info/40 via-brand/60 to-success/40" />
+            <div className="absolute left-[40%] top-[-3px] w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+            <div className="absolute left-[55%] top-[-3px] w-1.5 h-1.5 rounded-full bg-brand animate-pulse" style={{ animationDelay: "0.5s" }} />
+          </div>
+
+          {columns.map((col, i) => {
+            const Icon = col.icon;
+            const isHovered = hoveredCol === i;
+            return (
+              <motion.div
+                key={col.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.55, delay: i * 0.15 }}
+                onMouseEnter={() => setHoveredCol(i)}
+                onMouseLeave={() => setHoveredCol(null)}
+                className={`relative group cursor-default transition-all duration-300 ${i === 0 ? "rounded-l-2xl md:rounded-r-none rounded-2xl md:rounded-2xl" :
+                    i === 2 ? "rounded-r-2xl md:rounded-l-none rounded-2xl md:rounded-2xl" :
+                      "rounded-2xl md:rounded-none"
+                  } border ${col.borderColor} ${isHovered ? col.glowColor : "bg-dark-2/60"
+                  } p-7 overflow-hidden`}
+              >
+                {/* Top accent line */}
+                <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent ${col.accentColor === "info" ? "via-info" :
+                    col.accentColor === "brand" ? "via-brand" : "via-success"
+                  } to-transparent opacity-${isHovered ? "100" : "40"} transition-opacity`} />
+
+                {/* Stage badge */}
+                <div className="flex items-center justify-between mb-6">
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${col.accentColor === "info" ? "bg-info/10 text-info" :
+                      col.accentColor === "brand" ? "bg-brand/10 text-brand" : "bg-success/10 text-success"
+                    }`}>
+                    Stage {col.stage}
+                  </span>
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${col.iconBg}`}>
+                    <Icon className={`w-5 h-5 ${col.iconColor}`} />
+                  </div>
+                </div>
+
+                <h3 className="font-heading text-xl font-bold mb-1">{col.title}</h3>
+                <p className="text-xs text-light-4 mb-6">{col.subtitle}</p>
+
+                <ul className="space-y-3.5">
+                  {col.items.map((item, j) => (
+                    <motion.li
+                      key={item.label}
+                      initial={{ opacity: 0, x: -8 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.3, delay: 0.4 + i * 0.1 + j * 0.06 }}
+                      className="group/item"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${col.accentColor === "info" ? "bg-info" :
+                            col.accentColor === "brand" ? "bg-brand" : "bg-success"
+                          }`} />
+                        <div>
+                          <p className="text-sm font-medium text-light">{item.label}</p>
+                          <p className="text-xs text-light-4 mt-0.5">{item.detail}</p>
+                        </div>
+                      </div>
+                    </motion.li>
+                  ))}
+                </ul>
+
+                {/* Arrow connector for mobile */}
+                {i < 2 && (
+                  <div className="md:hidden flex justify-center mt-6">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-px h-4 bg-white/[0.1]" />
+                      <ChevronRight className="w-4 h-4 text-light-4 rotate-90" />
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
+
+        {/* Bottom trust strip */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs text-light-4"
+        >
+          {["RAG pipeline purpose-built for security Q&A", "Zero hallucinated citations", "On-prem deployment available", "SOC 2 Type II in progress"].map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-brand shrink-0" />
+              {t}
+            </span>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
 }
 
 function Differentiation() {
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+
+  const fullRows = [
+    {
+      capability: "Citation-backed answers",
+      capDesc: "Source evidence attached to every answer",
+      vaultix: { text: "Every answer with source excerpt + page number", level: "full" },
+      questionnaire: { text: "Partial — some tools offer template answers", level: "partial" },
+      llm: { text: "No source guarantees — hallucination risk", level: "none" },
+    },
+    {
+      capability: "Confidence-based review routing",
+      capDesc: "Know which answers need human attention",
+      vaultix: { text: "Auto-route low-confidence answers to review queue", level: "full" },
+      questionnaire: { text: "Basic flagging — manual review workflow", level: "partial" },
+      llm: { text: "No workflow controls — you figure it out", level: "none" },
+    },
+    {
+      capability: "Reusable approved answer library",
+      capDesc: "Get smarter from every completed questionnaire",
+      vaultix: { text: "Learns from approved answers across all projects", level: "full" },
+      questionnaire: { text: "Limited templates — not AI-personalized", level: "partial" },
+      llm: { text: "Manual copy-paste — nothing is retained", level: "none" },
+    },
+    {
+      capability: "Portal + spreadsheet workflows",
+      capDesc: "Handle any format customers throw at you",
+      vaultix: { text: "Single workflow for XLSX, CSV, and portal answers", level: "full" },
+      questionnaire: { text: "Spreadsheet-first — portal answers are manual", level: "partial" },
+      llm: { text: "Chat interface only — no file handling", level: "none" },
+    },
+    {
+      capability: "Audit-ready change history",
+      capDesc: "Full traceability for enterprise buyers",
+      vaultix: { text: "Full action trail: actor, timestamp, source cited", level: "full" },
+      questionnaire: { text: "Minimal logs — hard to produce for auditors", level: "partial" },
+      llm: { text: "Not audit-focused — conversation history only", level: "none" },
+    },
+  ];
+
+  const StatusBadge = ({ level, text }: { level: string; text: string }) => {
+    if (level === "full") {
+      return (
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+          <span className="text-sm text-light leading-snug">{text}</span>
+        </div>
+      );
+    }
+    if (level === "partial") {
+      return (
+        <div className="flex items-start gap-2">
+          <Minus className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+          <span className="text-sm text-light-3 leading-snug">{text}</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-start gap-2">
+        <XCircle className="w-4 h-4 text-danger/70 shrink-0 mt-0.5" />
+        <span className="text-sm text-light-4 leading-snug">{text}</span>
+      </div>
+    );
+  };
+
   return (
-    <section className="relative py-24 sm:py-28">
+    <section className="relative py-24 sm:py-28 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-dark-2 via-dark to-dark-2" />
+      <div className="absolute inset-0 bg-dots opacity-[0.10]" />
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div {...fadeUp} className="text-center mb-12">
-          <h3 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-            How Vaultix stands out against other options
-          </h3>
+        <motion.div {...fadeUp} className="text-center mb-14">
+          <span className="inline-flex items-center gap-2 bg-dark-4 border border-white/[0.08] text-light-3 text-xs font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full mb-5">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Competitive Comparison
+          </span>
+          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+            How Vaultix stands out
+            <span className="text-gradient-brand"> against every alternative</span>
+          </h2>
+          <p className="mt-4 text-light-2 text-lg max-w-2xl mx-auto">
+            Generic LLMs and spreadsheet tools leave gaps. Vaultix was built to close them.
+          </p>
         </motion.div>
 
+        {/* Column headers */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="rounded-2xl border border-white/[0.08] overflow-hidden"
+          className="grid grid-cols-[1fr_1.4fr_1fr_1fr] gap-px mb-2 hidden lg:grid"
         >
-          <div className="overflow-x-auto">
-            <table className="min-w-[760px] w-full text-sm">
-              <thead className="bg-dark-3/70 border-b border-white/[0.08] text-left">
-                <tr>
-                  <th className="px-5 sm:px-6 py-3 font-semibold text-light">Capability</th>
-                  <th className="px-5 sm:px-6 py-3 font-semibold text-brand">Vaultix</th>
-                  <th className="px-5 sm:px-6 py-3 font-semibold text-light-3">Other Questionnaire Tools</th>
-                  <th className="px-5 sm:px-6 py-3 font-semibold text-light-3">Generic LLM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row, i) => (
-                  <tr key={row.capability} className={i % 2 === 0 ? "bg-dark-2/40" : "bg-dark-2/20"}>
-                    <td className="px-5 sm:px-6 py-4 text-light">{row.capability}</td>
-                    <td className="px-5 sm:px-6 py-4 text-brand">{row.vaultix}</td>
-                    <td className="px-5 sm:px-6 py-4 text-light-3">{row.questionnaireTools}</td>
-                    <td className="px-5 sm:px-6 py-4 text-light-3">{row.genericLlm}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="px-5 py-3" />
+          <div className="px-5 py-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center">
+                <VaultixIcon className="w-4 h-4" />
+              </div>
+              <span className="font-heading font-bold text-brand text-sm">Vaultix</span>
+              <span className="text-[10px] bg-brand/10 border border-brand/20 text-brand px-1.5 py-0.5 rounded-full font-semibold">RECOMMENDED</span>
+            </div>
           </div>
+          <div className="px-5 py-3">
+            <span className="text-sm font-semibold text-light-3">Questionnaire Tools</span>
+          </div>
+          <div className="px-5 py-3">
+            <span className="text-sm font-semibold text-light-3">Generic LLM</span>
+          </div>
+        </motion.div>
+
+        {/* Rows */}
+        <div className="rounded-2xl overflow-hidden border border-white/[0.08]">
+          {fullRows.map((row, i) => (
+            <motion.div
+              key={row.capability}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              onMouseEnter={() => setHoveredRow(i)}
+              onMouseLeave={() => setHoveredRow(null)}
+              className={`transition-colors duration-200 ${hoveredRow === i ? "bg-dark-4/60" : i % 2 === 0 ? "bg-dark-3/30" : "bg-dark-3/10"
+                } ${i < fullRows.length - 1 ? "border-b border-white/[0.05]" : ""}`}
+            >
+              {/* Mobile layout */}
+              <div className="lg:hidden p-5 space-y-3">
+                <div>
+                  <p className="font-semibold text-light text-sm">{row.capability}</p>
+                  <p className="text-xs text-light-4 mt-0.5">{row.capDesc}</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs text-brand font-semibold mb-1">
+                    <VaultixIcon className="w-3 h-3" /> Vaultix
+                  </div>
+                  <StatusBadge level={row.vaultix.level} text={row.vaultix.text} />
+                  <div className="pt-1 border-t border-white/[0.04] space-y-1.5">
+                    <div className="text-xs text-light-4">Others: <StatusBadge level={row.questionnaire.level} text={row.questionnaire.text} /></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop layout */}
+              <div className="hidden lg:grid grid-cols-[1fr_1.4fr_1fr_1fr] gap-px items-start">
+                <div className="px-5 py-5">
+                  <p className="text-sm font-semibold text-light">{row.capability}</p>
+                  <p className="text-xs text-light-4 mt-1">{row.capDesc}</p>
+                </div>
+                <div className={`px-5 py-5 ${hoveredRow === i ? "bg-brand/[0.04]" : ""} border-l border-brand/10 transition-colors`}>
+                  <StatusBadge level={row.vaultix.level} text={row.vaultix.text} />
+                </div>
+                <div className="px-5 py-5 border-l border-white/[0.04]">
+                  <StatusBadge level={row.questionnaire.level} text={row.questionnaire.text} />
+                </div>
+                <div className="px-5 py-5 border-l border-white/[0.04]">
+                  <StatusBadge level={row.llm.level} text={row.llm.text} />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center text-xs text-light-4"
+        >
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-success" /> Full support</span>
+          <span className="flex items-center gap-1.5"><Minus className="w-3.5 h-3.5 text-warning" /> Partial support</span>
+          <span className="flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-danger/70" /> Not supported</span>
         </motion.div>
       </div>
     </section>
@@ -1803,49 +2302,251 @@ function Testimonials() {
 
 /* ═══════ PRICING ═══════ */
 function ResourceCenter() {
+  const allCategories = ["All", "Playbook", "Guide", "Research", "Template", "Case Study"];
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+
+  const filtered = resourcePosts.filter((p) => {
+    const matchCat = activeCategory === "All" || p.category === activeCategory;
+    const matchSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const featured = filtered.find((p) => p.featured) ?? filtered[0];
+  const rest = filtered.filter((p) => p !== featured);
+
+  const categoryColors: Record<string, string> = {
+    Playbook: "bg-brand/10 text-brand border-brand/20",
+    Guide: "bg-info/10 text-info border-info/20",
+    Research: "bg-success/10 text-success border-success/20",
+    Template: "bg-warning/10 text-warning border-warning/20",
+    "Case Study": "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  };
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubscribed(true);
+    }
+  };
+
   return (
-    <section className="relative py-24 sm:py-28">
+    <section id="resources" className="relative py-24 sm:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-dark-2" />
+      <div className="absolute inset-0 bg-dots opacity-[0.12]" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] rounded-full bg-brand/[0.03] blur-[100px] pointer-events-none" />
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div {...fadeUp} className="flex items-end justify-between gap-4 mb-10">
-          <div>
-            <span className="inline-block text-brand text-sm font-semibold tracking-wider uppercase mb-3">
-              Resource Center
-            </span>
-            <h3 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-              Learn what top security teams do differently
-            </h3>
+        {/* Header */}
+        <motion.div {...fadeUp} className="mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
+            <div>
+              <span className="inline-flex items-center gap-2 bg-brand/10 border border-brand/20 text-brand text-xs font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full mb-4">
+                <BookOpen className="w-3.5 h-3.5" />
+                Resource Center
+              </span>
+              <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+                Learn what top
+                <span className="text-gradient-brand"> security teams do differently</span>
+              </h2>
+              <p className="mt-3 text-light-2 text-lg max-w-xl">
+                Playbooks, guides, and research for security teams that want to move faster without cutting corners.
+              </p>
+            </div>
+            <a
+              href="#"
+              className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-light transition-colors shrink-0 group"
+            >
+              View all resources
+              <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
           </div>
-          <a href="#" className="hidden sm:inline-flex text-sm text-brand hover:text-brand-light transition-colors">
-            View all resources
-          </a>
+
+          {/* Filters + Search */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            {/* Category tabs */}
+            <div className="flex flex-wrap gap-2">
+              {allCategories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all duration-200 ${activeCategory === cat
+                      ? "bg-brand text-white border-brand shadow-lg shadow-brand/20"
+                      : "bg-dark-4/60 border-white/[0.08] text-light-3 hover:border-white/[0.16] hover:text-light"
+                    }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <div className="relative sm:ml-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-light-4" />
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 text-sm bg-dark-4/60 border border-white/[0.08] rounded-lg text-light placeholder:text-light-4 focus:outline-none focus:border-brand/40 transition-colors w-full sm:w-56"
+              />
+            </div>
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {resourcePosts.map((post, i) => (
-            <motion.a
-              key={post.title}
-              href="#"
-              initial={{ opacity: 0, y: 22 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
-              className="group rounded-2xl border border-white/[0.08] bg-dark-3/40 p-6 hover:border-brand/30 hover:bg-dark-3/60 transition-all"
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          {filtered.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20 text-light-4"
             >
-              <span className="inline-flex items-center gap-2 text-xs text-light-4 mb-4">
-                <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand">{post.category}</span>
-                {post.readTime}
-              </span>
-              <p className="text-light font-semibold leading-relaxed group-hover:text-brand-light transition-colors">
-                {post.title}
+              <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No resources match your search.</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={activeCategory + searchQuery}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              {/* Featured post */}
+              {featured && (
+                <motion.a
+                  href="#"
+                  className="group block rounded-2xl border border-white/[0.08] bg-dark-3/50 overflow-hidden mb-5 hover:border-brand/30 transition-all duration-300"
+                >
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${featured.gradient}`} />
+                  <div className="p-7 sm:p-8 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2.5 mb-4">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${categoryColors[featured.category] ?? "bg-dark-5 text-light-3 border-white/10"}`}>
+                          {featured.category}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-light-4">
+                          <Clock className="w-3 h-3" />
+                          {featured.readTime}
+                        </span>
+                        <span className="text-xs text-light-4">{featured.date}</span>
+                        <span className="text-xs bg-brand/10 text-brand border border-brand/20 px-2 py-0.5 rounded-full font-semibold">Featured</span>
+                      </div>
+                      <h3 className="font-heading text-xl sm:text-2xl font-bold text-light group-hover:text-brand-light transition-colors leading-snug mb-3">
+                        {featured.title}
+                      </h3>
+                      <p className="text-light-2 text-sm leading-relaxed max-w-2xl">{featured.description}</p>
+                      <span className="mt-5 inline-flex items-center gap-1.5 text-sm text-brand font-medium">
+                        Read article
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </div>
+                    <div className="hidden md:flex w-32 h-32 rounded-xl bg-gradient-to-br from-dark-4 to-dark-5 border border-white/[0.06] items-center justify-center shrink-0">
+                      <BookOpen className="w-10 h-10 text-light-4 opacity-40" />
+                    </div>
+                  </div>
+                </motion.a>
+              )}
+
+              {/* Rest of posts */}
+              {rest.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {rest.map((post, i) => (
+                    <motion.a
+                      key={post.title}
+                      href="#"
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.4, delay: i * 0.07 }}
+                      className="group rounded-2xl border border-white/[0.07] bg-dark-3/40 overflow-hidden hover:border-brand/25 hover:bg-dark-3/60 transition-all duration-300 flex flex-col"
+                    >
+                      <div className={`h-1 w-full bg-gradient-to-r ${post.gradient} opacity-70`} />
+                      <div className="p-5 flex flex-col flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${categoryColors[post.category] ?? "bg-dark-5 text-light-3 border-white/10"}`}>
+                            {post.category}
+                          </span>
+                          <span className="text-xs text-light-4 ml-auto">{post.date}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-light leading-snug group-hover:text-brand-light transition-colors mb-2 flex-1">
+                          {post.title}
+                        </p>
+                        <p className="text-xs text-light-3 leading-relaxed line-clamp-2 mb-4">
+                          {post.description}
+                        </p>
+                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/[0.04]">
+                          <span className="flex items-center gap-1 text-xs text-light-4">
+                            <Clock className="w-3 h-3" />
+                            {post.readTime}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-xs text-brand font-medium">
+                            Read
+                            <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Newsletter CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-12 rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/[0.07] via-dark-3/60 to-dark-3/60 p-8 sm:p-10 overflow-hidden relative"
+        >
+          <div className="absolute top-0 right-0 w-[300px] h-[200px] rounded-full bg-brand/[0.06] blur-[80px] pointer-events-none" />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="w-4.5 h-4.5 text-brand" />
+                <span className="text-xs font-semibold text-brand uppercase tracking-wider">Security Digest</span>
+              </div>
+              <h3 className="font-heading text-xl sm:text-2xl font-bold text-light mb-1">
+                Get the security team playbook
+              </h3>
+              <p className="text-sm text-light-3">
+                Biweekly guides on questionnaire automation, AI adoption, and closing enterprise deals faster. No spam.
               </p>
-              <span className="mt-5 inline-flex items-center gap-1.5 text-sm text-brand">
-                Read article
-                <ExternalLink className="w-3.5 h-3.5" />
-              </span>
-            </motion.a>
-          ))}
-        </div>
+            </div>
+            {subscribed ? (
+              <div className="flex items-center gap-2 text-success font-semibold shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+                You&apos;re subscribed!
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-2.5 w-full sm:w-auto shrink-0">
+                <input
+                  type="email"
+                  placeholder="Work email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="px-4 py-2.5 text-sm bg-dark-4/80 border border-white/[0.1] rounded-xl text-light placeholder:text-light-4 focus:outline-none focus:border-brand/50 transition-colors w-full sm:w-52"
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
+                >
+                  Subscribe
+                </button>
+              </form>
+            )}
+          </div>
+        </motion.div>
       </div>
     </section>
   );

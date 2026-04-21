@@ -7,6 +7,7 @@ import { X, Zap, Clock } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 // Simplified mobile sidebar items
 const mobileNavItems = [
@@ -80,9 +81,9 @@ export default function DashboardLayout({
           />
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-dark-2 border-r border-white/[0.06] p-4 animate-slide-up">
             <div className="flex items-center justify-between mb-6">
-              <Link href="/dashboard" className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center">
-                  <VaultixIcon className="w-5 h-5" />
+              <Link href="/dashboard" className="flex items-center gap-2.5 group">
+                <div className="relative w-8 h-8 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+                  <Image src="/logo.svg" alt="Vaultix Logo" fill className="object-contain" priority />
                 </div>
                 <span className="font-heading text-lg font-bold">
                   Vault<span className="text-brand">ix</span>
