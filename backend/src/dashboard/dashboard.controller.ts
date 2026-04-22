@@ -11,7 +11,7 @@ import { DashboardService } from './dashboard.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('workspaces/:workspaceId/dashboard')
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) {}
+  constructor(private readonly dashboardService: DashboardService) { }
 
   @Get('stats')
   @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)

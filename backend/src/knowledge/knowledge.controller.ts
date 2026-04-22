@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Delete,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -28,7 +30,7 @@ import { KnowledgeService } from './knowledge.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('workspaces/:workspaceId/knowledge')
 export class KnowledgeController {
-  constructor(private readonly knowledgeService: KnowledgeService) {}
+  constructor(private readonly knowledgeService: KnowledgeService) { }
 
   @Post('upload')
   @Roles(Role.OWNER, Role.EDITOR)
@@ -61,5 +63,22 @@ export class KnowledgeController {
     file: Express.Multer.File,
   ) {
     return this.knowledgeService.processAndUploadDocument(workspaceId, file);
+  }
+
+  @Get()
+  @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)
+  @ApiOperation({ summary: 'List knowledge base documents in workspace' })
+  async listDocuments(@Param('workspaceId') workspaceId: string) {
+    return this.knowledgeService.listDocuments(workspaceId);
+  }
+
+  @Delete(':documentId')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({ summary: 'Delete a knowledge base document' })
+  async deleteDocument(
+    @Param('workspaceId') workspaceId: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.knowledgeService.deleteDocument(workspaceId, documentId);
   }
 }

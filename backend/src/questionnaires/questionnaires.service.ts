@@ -14,7 +14,7 @@ export class QuestionnairesService {
     private readonly prisma: PrismaService,
     @InjectQueue(QUESTIONNAIRE_GENERATION_QUEUE)
     private readonly generationQueue: Queue<QuestionnaireGenerationJobData>,
-  ) {}
+  ) { }
 
   /**
    * Upload a questionnaire file, extract questions, and enqueue
@@ -127,6 +127,7 @@ export class QuestionnairesService {
       include: {
         questions: {
           orderBy: { rowIndex: 'asc' },
+          include: { citations: true },
         },
       },
     });

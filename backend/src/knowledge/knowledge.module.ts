@@ -18,4 +18,4 @@ import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
   controllers: [KnowledgeController],
   exports: [KnowledgeService],
 })
-export class KnowledgeModule {}
+export class KnowledgeModule { }

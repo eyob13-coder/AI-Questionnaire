@@ -1,11 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Search, Menu, Sun, Moon } from "lucide-react";
+import { Menu, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
-import { useState, useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import DashboardSearch from "@/components/layout/dashboard-search";
+import NotificationsMenu from "@/components/layout/notifications-menu";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -19,28 +21,53 @@ const pageTitles: Record<string, string> = {
   "/dashboard/settings": "Settings",
 };
 
+const THEME_STORAGE_KEY = "vaultix-theme";
+const THEME_EVENT_NAME = "vaultix-theme-change";
+
+type ThemeMode = "dark" | "light";
+
+function resolveTheme(value: string | null): ThemeMode {
+  return value === "light" ? "light" : "dark";
+}
+
+function subscribeTheme(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const listener: EventListener = () => onStoreChange();
+
+  window.addEventListener("storage", listener);
+  window.addEventListener(THEME_EVENT_NAME, listener);
+
+  return () => {
+    window.removeEventListener("storage", listener);
+    window.removeEventListener(THEME_EVENT_NAME, listener);
+  };
+}
+
+function getThemeSnapshot(): ThemeMode {
+  if (typeof window === "undefined") return "dark";
+  return resolveTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
+}
+
 interface TopbarProps {
   onMenuClick?: () => void;
 }
 
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [mounted, setMounted] = useState(false);
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "dark");
 
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("vaultix-theme") as "dark" | "light" | null;
-    const initial = saved ?? "dark";
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, []);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("vaultix-theme", next);
+    window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    window.dispatchEvent(new Event(THEME_EVENT_NAME));
   };
 
   const getTitle = () => {
@@ -78,58 +105,42 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.1] transition-colors w-64">
-            <Search className="w-4 h-4 text-light-3" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent text-sm text-light placeholder-light-3 outline-none w-full"
-            />
-            <kbd className="hidden md:inline-block text-[10px] text-light-4 bg-dark-4 px-1.5 py-0.5 rounded font-mono">
-              ⌘K
-            </kbd>
-          </div>
+          <DashboardSearch />
 
-          {/* Theme toggle */}
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.08] bg-dark-4/60 hover:bg-dark-5/80 text-light-3 hover:text-light transition-all duration-200 hover:border-white/[0.16] group overflow-hidden"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                {theme === "dark" ? (
-                  <motion.span
-                    key="sun"
-                    initial={{ rotate: -90, scale: 0.6, opacity: 0 }}
-                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                    exit={{ rotate: 90, scale: 0.6, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <Sun className="w-4 h-4" />
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="moon"
-                    initial={{ rotate: 90, scale: 0.6, opacity: 0 }}
-                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                    exit={{ rotate: -90, scale: 0.6, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    <Moon className="w-4 h-4" />
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-brand/10 to-transparent" />
-            </button>
-          )}
-
-          <button className="relative p-2.5 text-light-3 hover:text-light rounded-xl hover:bg-white/[0.04] transition">
-            <Bell className="w-[18px] h-[18px]" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand" />
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.08] bg-dark-4/60 hover:bg-dark-5/80 text-light-3 hover:text-light transition-all duration-200 hover:border-white/[0.16] group overflow-hidden"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {theme === "dark" ? (
+                <motion.span
+                  key="sun"
+                  initial={{ rotate: -90, scale: 0.6, opacity: 0 }}
+                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                  exit={{ rotate: 90, scale: 0.6, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <Sun className="w-4 h-4" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="moon"
+                  initial={{ rotate: 90, scale: 0.6, opacity: 0 }}
+                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                  exit={{ rotate: -90, scale: 0.6, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <Moon className="w-4 h-4" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+            <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-brand/10 to-transparent" />
           </button>
+
+          <NotificationsMenu />
 
           <div className="lg:hidden w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand">
             U

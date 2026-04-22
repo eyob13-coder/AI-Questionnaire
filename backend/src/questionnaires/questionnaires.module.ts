@@ -18,4 +18,4 @@ import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
   controllers: [QuestionnairesController],
   exports: [QuestionnairesService],
 })
-export class QuestionnairesModule {}
+export class QuestionnairesModule { }

@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +18,7 @@ export class KnowledgeService {
     private readonly prisma: PrismaService,
     @InjectQueue(DOCUMENT_PROCESSING_QUEUE)
     private readonly documentQueue: Queue<DocumentProcessingJobData>,
-  ) {}
+  ) { }
 
   /**
    * Upload a document and enqueue it for async processing via BullMQ.
@@ -71,5 +76,33 @@ export class KnowledgeService {
     );
 
     return document;
+  }
+
+  async listDocuments(workspaceId: string) {
+    const docs = await this.prisma.document.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { chunks: true } } },
+    });
+    return docs.map((d) => ({
+      id: d.id,
+      fileName: d.fileName,
+      fileType: d.fileType,
+      fileSize: d.fileSize,
+      status: d.status,
+      pageCount: d.pageCount,
+      chunkCount: d._count.chunks,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    }));
+  }
+
+  async deleteDocument(workspaceId: string, documentId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id: documentId, workspaceId },
+    });
+    if (!doc) throw new NotFoundException('Document not found');
+    await this.prisma.document.delete({ where: { id: documentId } });
+    return { success: true };
   }
 }

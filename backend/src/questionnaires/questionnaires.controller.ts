@@ -29,7 +29,7 @@ import { QuestionnairesService } from './questionnaires.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('workspaces/:workspaceId/questionnaires')
 export class QuestionnairesController {
-  constructor(private readonly questionnairesService: QuestionnairesService) {}
+  constructor(private readonly questionnairesService: QuestionnairesService) { }
 
   @Post('upload')
   @Roles(Role.OWNER, Role.EDITOR)

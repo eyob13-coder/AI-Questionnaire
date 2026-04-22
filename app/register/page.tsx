@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { signUp, signIn } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 const perks = [
     { icon: Zap, text: "Process 300+ questions in minutes" },
@@ -22,7 +21,6 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<"form" | "success">("form");
     const [error, setError] = useState("");
-    const router = useRouter();
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -51,7 +49,7 @@ export default function RegisterPage() {
             } else {
                 setStep("success");
             }
-        } catch (err: any) {
+        } catch {
             setError("An unexpected error occurred");
         } finally {
             setLoading(false);
@@ -260,9 +258,9 @@ export default function RegisterPage() {
                                     </div>
                                     <span className="text-xs text-light-3 leading-relaxed">
                                         I agree to the{" "}
-                                        <a href="#" className="text-brand hover:text-brand-light transition-colors">Terms of Service</a>
+                                        <Link href="/terms" className="text-brand hover:text-brand-light transition-colors">Terms of Service</Link>
                                         {" "}and{" "}
-                                        <a href="#" className="text-brand hover:text-brand-light transition-colors">Privacy Policy</a>
+                                        <Link href="/privacy" className="text-brand hover:text-brand-light transition-colors">Privacy Policy</Link>
                                     </span>
                                 </label>
 
