@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
-import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, formatApiError } from "@/lib/api";
 import type {
   DashboardNotification,
   NotificationListResponse,
@@ -70,7 +70,12 @@ export function useNotifications(
     } catch (err: unknown) {
       if (token !== requestTokenRef.current) return;
       startTransition(() => {
-        setError(err instanceof Error ? err.message : "Failed to load notifications");
+        setError(
+          formatApiError(
+            err,
+            "We couldn't load notifications right now. Please try again shortly.",
+          ),
+        );
       });
     } finally {
       if (token !== requestTokenRef.current) return;
@@ -179,7 +184,12 @@ export function useNotifications(
           ),
         );
         setUnreadCount((prev) => prev + 1);
-        setError(err instanceof Error ? err.message : "Failed to update notification");
+        setError(
+          formatApiError(
+            err,
+            "We couldn't update that notification right now. Please try again.",
+          ),
+        );
       });
     } finally {
       setPendingIds((prev) => prev.filter((id) => id !== notificationId));
@@ -224,7 +234,12 @@ export function useNotifications(
       startTransition(() => {
         setItems(previousItems);
         setUnreadCount(previousUnreadCount);
-        setError(err instanceof Error ? err.message : "Failed to mark all notifications as read");
+        setError(
+          formatApiError(
+            err,
+            "We couldn't mark notifications as read right now. Please try again.",
+          ),
+        );
       });
     } finally {
       setIsMarkingAllRead(false);

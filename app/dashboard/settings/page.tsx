@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Shield, AlertTriangle, Loader2 } from "lucide-react";
-import { apiPatch } from "@/lib/api";
+import { apiPatch, formatApiError } from "@/lib/api";
 import { useWorkspace } from "@/lib/workspace";
 import {
   WorkspaceGate,
@@ -35,9 +35,8 @@ function SettingsContent() {
       await apiPatch(`/workspaces/${workspace.id}`, { name, slug });
       await refresh();
       setSavedAt(Date.now());
-    } catch (e) {
-      const err = e as { response?: { data?: { message?: string } } };
-      setError(err?.response?.data?.message || "Failed to save");
+    } catch (error) {
+      setError(formatApiError(error, "Failed to save"));
     } finally {
       setSaving(false);
     }

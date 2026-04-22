@@ -8,6 +8,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardSearch from "@/components/layout/dashboard-search";
 import NotificationsMenu from "@/components/layout/notifications-menu";
+import { useSession } from "@/lib/auth-client";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -58,6 +59,13 @@ interface TopbarProps {
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "dark");
+  const { data: sessionData } = useSession();
+  const user = sessionData?.user;
+  const displayName =
+    user?.name?.trim() ||
+    user?.email?.split("@")[0] ||
+    "Account";
+  const userInitial = displayName.charAt(0).toUpperCase() || "A";
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -142,9 +150,18 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
           <NotificationsMenu />
 
-          <div className="lg:hidden w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand">
-            U
-          </div>
+          {user?.image ? (
+            <img
+              src={user.image}
+              alt={displayName}
+              className="lg:hidden w-8 h-8 rounded-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="lg:hidden w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand">
+              {userInitial}
+            </div>
+          )}
         </div>
       </div>
     </header>

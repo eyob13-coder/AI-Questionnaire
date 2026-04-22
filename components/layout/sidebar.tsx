@@ -14,10 +14,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  LogOut,
   Plus,
 } from "lucide-react";
 import Image from "next/image";
+import { useSession } from "@/lib/auth-client";
 
 const mainNav = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", hoverClass: "group-hover:scale-110" },
@@ -36,6 +36,15 @@ const bottomNav = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { data: sessionData } = useSession();
+
+  const user = sessionData?.user;
+  const normalizedEmail = user?.email?.trim() || "";
+  const displayName =
+    user?.name?.trim() ||
+    (normalizedEmail ? normalizedEmail.split("@")[0] : "Account");
+  const displayEmail = normalizedEmail || "Signed in";
+  const displayInitial = displayName.charAt(0).toUpperCase() || "U";
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -132,13 +141,23 @@ export default function Sidebar() {
       <div className="px-3 py-3 border-t border-white/[0.06] shrink-0">
         {/* User */}
         <div className={`flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.04] cursor-pointer transition-all ${collapsed ? "justify-center" : ""}`}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand shrink-0">
-            U
-          </div>
+          {user?.image ? (
+            // Use img to avoid remote image host config friction with social avatars.
+            <img
+              src={user.image}
+              alt={displayName}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand shrink-0">
+              {displayInitial}
+            </div>
+          )}
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-light truncate">User</p>
-              <p className="text-xs text-light-3 truncate">user@company.com</p>
+              <p className="text-sm font-medium text-light truncate">{displayName}</p>
+              <p className="text-xs text-light-3 truncate">{displayEmail}</p>
             </div>
           )}
         </div>

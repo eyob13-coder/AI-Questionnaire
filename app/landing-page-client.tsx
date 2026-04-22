@@ -48,6 +48,7 @@ import {
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { SITE_URL } from "@/lib/seo";
 import { subscribeNewsletter } from "@/lib/resources";
+import { formatApiError } from "@/lib/api";
 
 /* ─── Animation helpers ─── */
 const fadeUp = {
@@ -2396,11 +2397,8 @@ function ResourceCenter() {
     try {
       await subscribeNewsletter(email.trim(), "landing");
       setSubscribed(true);
-    } catch (err) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setSubscribeError(
-        e?.response?.data?.message || "Could not subscribe — please try again.",
-      );
+    } catch (error) {
+      setSubscribeError(formatApiError(error, "Could not subscribe - please try again."));
     } finally {
       setSubscribing(false);
     }

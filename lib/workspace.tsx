@@ -7,7 +7,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
-import { apiGet } from "./api";
+import { apiGet, apiPost } from "./api";
 
 export interface Workspace {
     id: string;
@@ -46,12 +46,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setError(null);
         try {
             const list = await apiGet<Workspace[]>("/workspaces");
-            setWorkspaces(list);
+            const resolvedList =
+                list.length > 0
+                    ? list
+                    : [await apiPost<Workspace>("/workspaces/bootstrap")];
+
+            setWorkspaces(resolvedList);
 
             const stored =
                 typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
             const initial =
-                list.find((w) => w.id === stored)?.id || list[0]?.id || null;
+                resolvedList.find((w) => w.id === stored)?.id || resolvedList[0]?.id || null;
             setActiveId(initial);
             if (initial && typeof window !== "undefined") {
                 localStorage.setItem(STORAGE_KEY, initial);
@@ -67,7 +72,43 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        void load();
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const list = await apiGet<Workspace[]>("/workspaces");
+                const resolvedList =
+                    list.length > 0
+                        ? list
+                        : [await apiPost<Workspace>("/workspaces/bootstrap")];
+
+                if (cancelled) return;
+
+                setWorkspaces(resolvedList);
+
+                const stored =
+                    typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+                const initial =
+                    resolvedList.find((w) => w.id === stored)?.id || resolvedList[0]?.id || null;
+                setActiveId(initial);
+                if (initial && typeof window !== "undefined") {
+                    localStorage.setItem(STORAGE_KEY, initial);
+                }
+            } catch (err: unknown) {
+                const e = err as { response?: { status?: number }; message?: string };
+                if (!cancelled && e?.response?.status !== 401) {
+                    setError(e?.message || "Failed to load workspaces");
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const setActiveWorkspace = (id: string) => {

@@ -3,14 +3,34 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
+function isDbConnectionError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string };
+  const code = e?.code;
+  const message = (e?.message || '').toLowerCase();
+
+  return (
+    code === 'P1017' ||
+    code === 'P1001' ||
+    code === 'P1008' ||
+    code === 'ETIMEDOUT' ||
+    message.includes('server has closed the connection') ||
+    message.includes('connection closed') ||
+    message.includes('timed out')
+  );
+}
+
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
@@ -35,14 +55,27 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Workspace context required');
     }
 
-    const member = await this.prisma.workspaceMember.findUnique({
-      where: {
-        userId_workspaceId: {
-          userId: user.id,
-          workspaceId,
+    let member: { role: Role } | null;
+    try {
+      member = await this.prisma.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (isDbConnectionError(error)) {
+        this.logger.warn(
+          `Database unavailable while checking roles for workspace ${workspaceId}`,
+        );
+        throw new ServiceUnavailableException(
+          'Database is temporarily unavailable. Please retry in a moment.',
+        );
+      }
+      throw error;
+    }
 
     if (!member) {
       throw new ForbiddenException('Not a member of this workspace');

@@ -21,7 +21,7 @@ import {
   Search,
   HardDrive,
 } from "lucide-react";
-import { apiDelete, apiGet, apiUpload } from "@/lib/api";
+import { apiDelete, apiGet, apiUpload, formatApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -112,7 +112,7 @@ function KnowledgeContent({
       await apiUpload(`/workspaces/${workspaceId}/knowledge/upload`, file);
       await reload();
     } catch (nextError) {
-      alert(`Upload failed: ${nextError instanceof Error ? nextError.message : "Unknown error"}`);
+      alert(formatApiError(nextError, "Upload failed"));
     } finally {
       setUploading(false);
     }
@@ -125,7 +125,7 @@ function KnowledgeContent({
       await apiDelete(`/workspaces/${workspaceId}/knowledge/${id}`);
       setDocs((current) => current.filter((doc) => doc.id !== id));
     } catch (nextError) {
-      alert(`Delete failed: ${nextError instanceof Error ? nextError.message : "Unknown error"}`);
+      alert(formatApiError(nextError, "Delete failed"));
     }
   };
 

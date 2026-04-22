@@ -8,6 +8,7 @@ import {
   UseGuards,
   Param,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,6 +31,12 @@ export class WorkspacesController {
   @ApiOperation({ summary: 'List all workspaces for the authenticated user' })
   async getMyWorkspaces(@CurrentUser('id') userId: string) {
     return this.workspacesService.getUserWorkspaces(userId);
+  }
+
+  @Post('bootstrap')
+  @ApiOperation({ summary: 'Create a default workspace if the user has none' })
+  async bootstrapWorkspace(@CurrentUser('id') userId: string) {
+    return this.workspacesService.ensurePersonalWorkspace(userId);
   }
 
   @Get(':id')
@@ -91,5 +98,45 @@ export class WorkspacesController {
       throw new ForbiddenException('Use leave workspace instead');
     }
     return this.workspacesService.removeMember(memberId);
+  }
+
+  @Get(':workspaceId/notifications')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)
+  @ApiOperation({ summary: 'Get workspace notifications for the topbar bell' })
+  async getNotifications(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsedLimit = limit ? Number(limit) : 8;
+    return this.workspacesService.getNotifications(workspaceId, userId, parsedLimit);
+  }
+
+  @Patch(':workspaceId/notifications/:notificationId/read')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)
+  @ApiOperation({ summary: 'Mark a single notification as read' })
+  async markNotificationRead(
+    @Param('workspaceId') workspaceId: string,
+    @Param('notificationId') notificationId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.markNotificationRead(
+      workspaceId,
+      userId,
+      notificationId,
+    );
+  }
+
+  @Post(':workspaceId/notifications/read-all')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)
+  @ApiOperation({ summary: 'Mark all fetched notifications as read' })
+  async markAllNotificationsRead(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.markAllNotificationsRead(workspaceId, userId);
   }
 }

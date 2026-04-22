@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { UserPlus, Trash2, Mail, Crown, Eye, Pencil, Search } from "lucide-react";
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, formatApiError } from "@/lib/api";
 import { formatDate, initialsFromName } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -107,8 +107,7 @@ function TeamContent({
       setInviteEmail("");
       await reload();
     } catch (nextError) {
-      const responseError = nextError as { response?: { data?: { message?: string } } };
-      alert(responseError.response?.data?.message || "Failed to invite member");
+      alert(formatApiError(nextError, "Failed to invite member"));
     } finally {
       setInviting(false);
     }
@@ -121,8 +120,7 @@ function TeamContent({
       await apiDelete(`/workspaces/${workspaceId}/members/${memberId}`);
       setMembers((current) => current.filter((member) => member.id !== memberId));
     } catch (nextError) {
-      const responseError = nextError as { response?: { data?: { message?: string } } };
-      alert(responseError.response?.data?.message || "Failed to remove member");
+      alert(formatApiError(nextError, "Failed to remove member"));
     }
   };
 

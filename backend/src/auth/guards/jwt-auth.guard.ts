@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
@@ -11,6 +12,22 @@ import { Request } from 'express';
 
 const SESSION_CACHE_TTL = 300; // 5 minutes
 const SESSION_CACHE_PREFIX = 'session:';
+
+function isDbConnectionError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string };
+  const code = e?.code;
+  const message = (e?.message || '').toLowerCase();
+
+  return (
+    code === 'P1017' ||
+    code === 'P1001' ||
+    code === 'P1008' ||
+    code === 'ETIMEDOUT' ||
+    message.includes('server has closed the connection') ||
+    message.includes('connection closed') ||
+    message.includes('timed out')
+  );
+}
 
 /**
  * Guard that validates Better Auth session tokens.
@@ -29,6 +46,14 @@ export class JwtAuthGuard implements CanActivate {
     private readonly redis: RedisService,
   ) {}
 
+  private normalizeSessionToken(rawToken: string | undefined): string | undefined {
+    if (!rawToken) return undefined;
+    const trimmed = rawToken.trim();
+    if (!trimmed) return undefined;
+    const dotIndex = trimmed.indexOf('.');
+    return dotIndex > 0 ? trimmed.slice(0, dotIndex) : trimmed;
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
@@ -41,16 +66,19 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     if (!token) {
-      const cookieToken = (
-        request.cookies as Record<string, string> | undefined
-      )?.['better-auth.session_token'];
-      if (cookieToken) {
-        token = cookieToken;
-      }
+      const cookies = request.cookies as Record<string, string> | undefined;
+      token = cookies?.['better-auth.session_token'] || 
+              cookies?.['better-auth.session-token'] || 
+              cookies?.['better_auth_session_token'] ||
+              cookies?.['__Secure-better-auth.session_token'];
     }
 
+    token = this.normalizeSessionToken(token);
+
     if (!token) {
-      throw new UnauthorizedException('No session token provided');
+      const msg = 'No session token provided';
+      this.logger.error(msg);
+      throw new UnauthorizedException(msg);
     }
 
     // Try Redis cache first
@@ -67,16 +95,29 @@ export class JwtAuthGuard implements CanActivate {
 
     if (!user) {
       // Validate session against the database
-      const session = await this.prisma.session.findUnique({
-        where: { token },
-        include: { user: true },
-      });
-
-      if (!session || new Date(session.expiresAt) < new Date()) {
-        throw new UnauthorizedException('Invalid or expired session');
+      let session: any = null;
+      try {
+        session = await this.prisma.session.findUnique({
+          where: { token },
+          include: { user: true },
+        });
+      } catch (error) {
+        if (isDbConnectionError(error)) {
+          this.logger.warn('Database unavailable while validating session');
+          throw new ServiceUnavailableException(
+            'Authentication service is temporarily unavailable. Please retry in a moment.',
+          );
+        }
+        throw error;
       }
 
-      user = session.user as unknown as Record<string, unknown>;
+      if (!session || new Date(session.expiresAt) < new Date()) {
+        const msg = `Invalid or expired session. Found: ${!!session}`;
+        this.logger.error(msg);
+        throw new UnauthorizedException(msg);
+      }
+
+      user = session.user as Record<string, unknown>;
 
       // Cache in Redis
       try {

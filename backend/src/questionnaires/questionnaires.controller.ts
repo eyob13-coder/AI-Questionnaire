@@ -8,7 +8,6 @@ import {
   Param,
   ParseFilePipe,
   MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -53,8 +52,6 @@ export class QuestionnairesController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          // Accepting excel formats
-          new FileTypeValidator({ fileType: /(csv|spreadsheetml|excel)/ }),
         ],
       }),
     )

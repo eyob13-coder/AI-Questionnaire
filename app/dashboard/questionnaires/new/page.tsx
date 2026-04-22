@@ -11,7 +11,7 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
-import { apiUpload } from "@/lib/api";
+import { apiUpload, formatApiError } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -73,9 +73,8 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
         (p) => setProgress(p),
       );
       setCreated(res);
-    } catch (e) {
-      const err = e as { response?: { data?: { message?: string } } };
-      setError(err?.response?.data?.message || "Upload failed");
+    } catch (error) {
+      setError(formatApiError(error, "Upload failed"));
     } finally {
       setUploading(false);
     }

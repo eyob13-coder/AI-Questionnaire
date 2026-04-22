@@ -10,3 +10,29 @@ export async function hasServerSession(): Promise<boolean> {
   const cookieStore = await cookies();
   return Boolean(cookieStore.get(AUTH_SESSION_COOKIE)?.value);
 }
+
+export async function hasValidatedBackendSession(
+  requestHeaders: Headers,
+): Promise<boolean> {
+  const cookieHeader = requestHeaders.get("cookie");
+
+  if (!cookieHeader) {
+    return false;
+  }
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/auth/me`, {
+      method: "GET",
+      headers: {
+        cookie: cookieHeader,
+      },
+      cache: "no-store",
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}

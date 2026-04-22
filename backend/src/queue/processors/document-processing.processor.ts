@@ -54,27 +54,52 @@ export class DocumentProcessingProcessor extends WorkerHost {
       // 2. Chunk text
       const chunks = this.chunkText(extractedText, 1000);
 
-      // 3. Generate embeddings and save chunks
+      // 3. Generate embeddings (when available) and save chunks
+      let embeddingAvailable = true;
+
       for (let i = 0; i < chunks.length; i++) {
         const textChunk = chunks[i];
         if (!textChunk.trim()) continue;
 
         await job.updateProgress(Math.round((i / chunks.length) * 90));
 
-        const embeddingVector =
-          await this.ragService.generateEmbedding(textChunk);
+        let embeddingVector: number[] | null = null;
 
-        await this.prisma.$executeRaw`
-          INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at, embedding)
-          VALUES (
-            gen_random_uuid(), 
-            ${textChunk}, 
-            ${i}, 
-            ${documentId}, 
-            NOW(), 
-            ${embeddingVector}::vector
-          )
-        `;
+        if (embeddingAvailable) {
+          try {
+            embeddingVector = await this.ragService.generateEmbedding(textChunk);
+          } catch (embeddingError) {
+            embeddingAvailable = false;
+            this.logger.warn(
+              `Embedding generation unavailable for document ${documentId}; storing chunks without vectors.`,
+            );
+          }
+        }
+
+        if (embeddingVector) {
+          await this.prisma.$executeRaw`
+            INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at, embedding)
+            VALUES (
+              gen_random_uuid(), 
+              ${textChunk}, 
+              ${i}, 
+              ${documentId}, 
+              NOW(), 
+              ${embeddingVector}::vector
+            )
+          `;
+        } else {
+          await this.prisma.$executeRaw`
+            INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at)
+            VALUES (
+              gen_random_uuid(), 
+              ${textChunk}, 
+              ${i}, 
+              ${documentId}, 
+              NOW()
+            )
+          `;
+        }
       }
 
       // 4. Mark as ready

@@ -28,7 +28,8 @@
     "stripe": "^22.0.2",
     "use-debounce": "^10.1.1",
     "xlsx": "^0.18.5",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -2,11 +2,12 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
-import { Eye, EyeOff, ArrowRight, Lock, Mail, CheckCircle2, BarChart3, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, ArrowRight, Lock, Mail, CheckCircle2, BarChart3, Zap, WifiOff } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { signIn } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatAuthError, getOfflineMessage } from "@/lib/auth-errors";
 
 const testimonial = {
     quote: "Vaultix cut our security questionnaire turnaround from 2 weeks to 2 hours. Absolutely game-changing for our sales cycle.",
@@ -28,37 +29,76 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
 
     const [error, setError] = useState("");
+    const [isOffline, setIsOffline] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const nextTarget = searchParams.get("next");
+    const callbackURL =
+        nextTarget && nextTarget.startsWith("/dashboard")
+            ? nextTarget
+            : "/dashboard";
+
+    useEffect(() => {
+        const updateOnlineState = () => {
+            setIsOffline(!navigator.onLine);
+        };
+
+        updateOnlineState();
+        window.addEventListener("online", updateOnlineState);
+        window.addEventListener("offline", updateOnlineState);
+
+        return () => {
+            window.removeEventListener("online", updateOnlineState);
+            window.removeEventListener("offline", updateOnlineState);
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
+
+        if (isOffline) {
+            setError(getOfflineMessage());
+            return;
+        }
+
+        setLoading(true);
 
         try {
             const { error: signInError } = await signIn.email({
                 email,
                 password,
-                callbackURL: "/dashboard" // Or wherever you want to redirect after login
+                callbackURL,
             });
 
             if (signInError) {
-                setError(signInError.message || "Failed to sign in");
+                setError(formatAuthError(signInError, "Failed to sign in"));
             } else {
-                router.push("/dashboard");
+                router.replace(callbackURL);
             }
-        } catch (err: any) {
-            setError("An unexpected error occurred");
+        } catch (err) {
+            setError(formatAuthError(err, "Unable to sign in right now."));
         } finally {
             setLoading(false);
         }
     };
 
     const handleGoogleSignIn = async () => {
-        await signIn.social({
-            provider: "google",
-            callbackURL: "/dashboard"
-        });
+        setError("");
+
+        if (isOffline) {
+            setError(getOfflineMessage());
+            return;
+        }
+
+        try {
+            await signIn.social({
+                provider: "google",
+                callbackURL,
+            });
+        } catch (err) {
+            setError(formatAuthError(err, "Google sign-in is unavailable right now."));
+        }
     };
 
     return (
@@ -205,7 +245,11 @@ export default function LoginPage() {
                     </div>
 
                     {/* Google SSO */}
-                    <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-200 text-sm font-medium text-light mb-6 cursor-pointer">
+                    <button
+                        onClick={handleGoogleSignIn}
+                        disabled={loading || isOffline}
+                        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] hover:border-white/[0.15] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium text-light mb-6 cursor-pointer"
+                    >
                         <svg className="w-4 h-4" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -223,6 +267,12 @@ export default function LoginPage() {
                     </div>
 
                     {/* Form */}
+                    {isOffline && (
+                        <div className="mb-4 p-3 rounded-xl bg-warning/10 border border-warning/20 text-sm text-warning flex items-start gap-2">
+                            <WifiOff className="w-4 h-4 mt-0.5 shrink-0" />
+                            <span>{getOfflineMessage()}</span>
+                        </div>
+                    )}
                     {error && (
                         <div className="mb-4 p-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
                             {error}
@@ -281,7 +331,7 @@ export default function LoginPage() {
                         {/* Submit */}
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || isOffline}
                             className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-brand hover:bg-brand-hover disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full transition-all duration-200 hover:shadow-[0_0_24px_rgba(249,115,22,0.35)] mt-2"
                         >
                             {loading ? (

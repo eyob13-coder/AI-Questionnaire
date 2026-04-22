@@ -105,6 +105,8 @@ function QuestionnaireContent({
   useEffect(() => {
     let cancelled = false;
     let interval: ReturnType<typeof setInterval> | null = null;
+    const shouldPoll = (status: string) =>
+      status === "PROCESSING" || status === "GENERATING";
 
     const load = async () => {
       try {
@@ -114,9 +116,9 @@ function QuestionnaireContent({
         if (!cancelled) {
           setData(res);
           setError(null);
-          if (res.status === "PROCESSING" && !interval) {
+          if (shouldPoll(res.status) && !interval) {
             interval = setInterval(load, 5000);
-          } else if (res.status !== "PROCESSING" && interval) {
+          } else if (!shouldPoll(res.status) && interval) {
             clearInterval(interval);
             interval = null;
           }
@@ -140,6 +142,8 @@ function QuestionnaireContent({
   if (error || !data) return <PageError message={error || "Not found"} />;
 
   const questions = data.questions || [];
+  const isGenerating =
+    data.status === "PROCESSING" || data.status === "GENERATING";
   const approved = questions.filter((q) => q.status === "APPROVED").length;
   const review = questions.filter((q) => q.status === "REVIEW").length;
   const draft = questions.filter((q) => q.status === "DRAFT").length;
@@ -182,7 +186,7 @@ function QuestionnaireContent({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {data.status === "PROCESSING" && (
+            {isGenerating && (
               <span className="inline-flex items-center gap-1.5 text-xs text-info">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Generating answers…
@@ -259,7 +263,7 @@ function QuestionnaireContent({
 
         {filtered.length === 0 && (
           <div className="px-5 py-12 text-center text-sm text-light-3">
-            {data.status === "PROCESSING"
+            {isGenerating
               ? "Answers are being generated. This page will refresh automatically."
               : "No answers match your filters."}
           </div>
@@ -267,6 +271,12 @@ function QuestionnaireContent({
 
         {filtered.map((row) => {
           const conf = Math.round(row.confidence ?? 0);
+          const answerText =
+            row.answerText && row.answerText.trim().length > 0
+              ? row.answerText
+              : isGenerating
+                ? "Awaiting AI answer..."
+                : "No AI answer generated for this row yet.";
           return (
             <div key={row.id} className="border-b border-white/[0.04]">
               <div
@@ -283,11 +293,7 @@ function QuestionnaireContent({
                   {row.questionText}
                 </p>
                 <p className="text-sm text-light-2 leading-relaxed line-clamp-2">
-                  {row.answerText || (
-                    <span className="text-light-4 italic">
-                      Awaiting AI answer…
-                    </span>
-                  )}
+                  {answerText}
                 </p>
                 <div className="flex items-center gap-1.5">
                   <div className="w-8 h-1.5 rounded-full bg-dark-4 overflow-hidden">
@@ -360,3 +366,4 @@ export default function QuestionnaireReviewPage() {
     </WorkspaceGate>
   );
 }
+

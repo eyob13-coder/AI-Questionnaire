@@ -1,0 +1,11 @@
+﻿Question ID,Category,Question,Answer,Notes
+Q-001,Encryption,Do you encrypt data at rest?,Yes,AES-256 encryption enabled.
+Q-002,Encryption,Do you encrypt data in transit?,Yes,TLS 1.2+ enforced.
+Q-003,Access Control,Do you support SSO?,Yes,SAML 2.0 and OIDC supported.
+Q-004,Access Control,Is MFA required for admins?,Yes,MFA enforced for admin roles.
+Q-005,Compliance,Are you SOC 2 compliant?,In Progress,Type II audit scheduled.
+Q-006,Business Continuity,Do you perform backups?,Yes,Daily backups with retention policy.
+Q-007,Incident Response,Do you maintain an incident response plan?,Yes,Reviewed quarterly.
+Q-008,Vulnerability Management,Do you run regular vulnerability scans?,Yes,Automated weekly scans.
+Q-009,Vendor Risk,Do you assess third-party vendors?,Yes,Annual vendor review process.
+Q-010,Data Privacy,Do you support GDPR data subject requests?,Yes,Handled via support workflow.
