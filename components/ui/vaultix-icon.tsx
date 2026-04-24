@@ -6,12 +6,23 @@ export function VaultixIcon({ className }: { className?: string }) {
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <circle cx="10" cy="10" r="6.5" stroke="white" strokeWidth="1.4" opacity="0.65" />
-            <line x1="10" y1="3.5" x2="10" y2="16.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-            <line x1="3.5" y1="10" x2="16.5" y2="10" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-            <line x1="5.4" y1="5.4" x2="14.6" y2="14.6" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-            <line x1="14.6" y1="5.4" x2="5.4" y2="14.6" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-            <circle cx="10" cy="10" r="2.5" fill="white" />
+            {/* Vault hinge bar with rivets */}
+            <rect x="6" y="3.4" width="8" height="1.4" rx="0.7" fill="white" opacity="0.9" />
+            <circle cx="6" cy="4.1" r="0.7" fill="white" />
+            <circle cx="14" cy="4.1" r="0.7" fill="white" />
+
+            {/* The V */}
+            <path
+                d="M3.6 6.2 L9.5 16.4 Q10 17.2 10.5 16.4 L16.4 6.2"
+                stroke="white"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+            />
+
+            {/* Apex dot */}
+            <circle cx="10" cy="16.7" r="1.4" fill="white" />
         </svg>
     );
 }
