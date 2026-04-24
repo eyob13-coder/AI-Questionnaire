@@ -89,10 +89,31 @@ if (process.env.NODE_ENV !== "production") {
   globalForAuthDb.__vaultixAuthDb = authDbClients;
 }
 
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      process.env.BETTER_AUTH_URL,
+      process.env.NEXT_PUBLIC_APP_URL,
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "https://*.replit.dev",
+      "https://*.replit.app",
+      "https://*.janeway.replit.dev",
+      "https://*.picard.replit.dev",
+      "https://*.kirk.replit.dev",
+      "https://*.riker.replit.dev",
+      "https://*.spock.replit.dev",
+      "https://*.sisko.replit.dev",
+      "https://*.worf.replit.dev",
+    ].filter(Boolean) as string[],
+  ),
+);
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins,
   emailAndPassword: {
     enabled: true,
   },
