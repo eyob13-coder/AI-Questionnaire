@@ -24,3 +24,11 @@ Next.js 16 app (App Router, Turbopack) imported from Vercel. Uses React 19, Tail
 - `lib/` — auth (Better Auth + Prisma), API client (`api.ts` browser, `api-server.ts` server), stores, helpers.
 - `public/` — static assets.
 - `backend/` — separate NestJS service (Prisma, BullMQ, Redis). Not started by the default workflow.
+
+## AI provider
+
+- The backend's `RagService` (`backend/src/rag/rag.service.ts`) now uses Replit AI Integrations (OpenAI-compatible) instead of Google Gemini.
+- It reads `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL`, which are auto-provisioned by the integration — no Gemini key needed for the MVP.
+- Default completion model is `gpt-5.4` (override with `OPENAI_COMPLETION_MODEL`).
+- **Embedding caveat**: Replit AI Integrations does not expose an embeddings endpoint. For the MVP, `generateEmbedding` returns a deterministic SHA-256-derived pseudo-embedding (768 dims). It will match exact / near-duplicate questions but is **not** a real semantic embedding. Swap in a proper embedding provider before production.
+- Running the backend locally still requires Postgres (`DATABASE_URL`) and Redis (BullMQ). The default `Start application` workflow only runs the Next.js frontend.
