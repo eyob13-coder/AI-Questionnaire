@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Zap } from "lucide-react";
+import { Check, Zap, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import {
   WorkspaceGate,
@@ -71,6 +72,33 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
   const [info, setInfo] = useState<BillingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const canceled = searchParams.get("canceled") === "1";
+
+  async function startCheckout(planKey: string) {
+    setCheckoutError(null);
+    setCheckoutPlan(planKey);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey, workspaceId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Could not start checkout");
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      setCheckoutError(e instanceof Error ? e.message : "Checkout failed");
+      setCheckoutPlan(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -181,11 +209,25 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
+      {canceled && (
+        <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+          Checkout was canceled. You can pick a plan again whenever you&apos;re
+          ready.
+        </div>
+      )}
+      {checkoutError && (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {checkoutError}
+        </div>
+      )}
+
       <div>
         <h3 className="font-heading text-lg font-semibold mb-4">All Plans</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans.map((plan) => {
             const current = plan.key === info.plan;
+            const isContact = plan.price === "Custom";
+            const busy = checkoutPlan === plan.key;
             return (
               <div
                 key={plan.key}
@@ -215,17 +257,29 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
                   ))}
                 </ul>
                 <button
-                  className={`w-full py-2.5 rounded-full text-sm font-semibold transition-all ${current
+                  className={`w-full py-2.5 rounded-full text-sm font-semibold transition-all flex items-center justify-center gap-2 ${current
                     ? "`bg-white/6` text-light-3 cursor-default"
-                    : "bg-brand hover:bg-brand-hover text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                    : "bg-brand hover:bg-brand-hover text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] disabled:opacity-60 disabled:cursor-not-allowed"
                     }`}
-                  disabled={current}
+                  disabled={current || busy || (!isContact && checkoutPlan !== null)}
+                  onClick={() => {
+                    if (current) return;
+                    if (isContact) {
+                      window.location.href =
+                        "mailto:sales@vaultix.ai?subject=Enterprise%20plan%20inquiry";
+                      return;
+                    }
+                    void startCheckout(plan.key);
+                  }}
                 >
+                  {busy && <Loader2 className="w-4 h-4 animate-spin" />}
                   {current
                     ? "Current Plan"
-                    : plan.price === "Custom"
+                    : isContact
                       ? "Contact Sales"
-                      : "Upgrade"}
+                      : busy
+                        ? "Redirecting…"
+                        : "Upgrade"}
                 </button>
               </div>
             );
