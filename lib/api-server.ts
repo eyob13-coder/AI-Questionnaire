@@ -7,8 +7,13 @@
  * backend call goes through a single, consistent origin.
  */
 
+// Server-side calls go directly to the backend on localhost (faster + skips
+// the rewrite proxy). Browser calls use the relative `/v1` URL via Next.js
+// rewrite (see next.config.ts) so the same Replit origin serves both.
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  process.env.BACKEND_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:3001/v1";
 
 interface ServerFetchOptions {
   /** Extra headers to forward (e.g. cookies). */

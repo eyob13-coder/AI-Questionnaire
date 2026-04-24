@@ -21,7 +21,7 @@ export interface ApiErrorInfo {
  * - Global error handling: 401 -> redirect to /login
  */
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/v1",
   withCredentials: true,
   timeout: 30_000,
   headers: {

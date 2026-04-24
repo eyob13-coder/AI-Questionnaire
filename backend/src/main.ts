@@ -10,8 +10,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix — `/v1` so it doesn't collide with Next.js `/api/auth/*`
+  // (Better Auth) on the frontend. Frontend routes proxied as `/v1/*`.
+  app.setGlobalPrefix('v1');
 
   // Cookie parser - required for reading Better Auth session cookies
   app.use(cookieParser());
@@ -19,17 +20,12 @@ async function bootstrap() {
   const frontendUrl = config.get<string>('FRONTEND_URL', 'http://localhost:3000');
   console.log(`CORS Origin: ${frontendUrl}`);
 
-  // CORS - allow the Next.js frontend to send cookies cross-origin
+  // CORS - allow the Next.js frontend to send cookies cross-origin.
+  // In Replit dev, the browser hits `/v1/*` on the same origin and Next.js
+  // rewrites server-side to localhost:3001, so CORS rarely matters here, but
+  // we keep this permissive for direct calls (Swagger docs, manual curl, etc.)
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // In development, allow any origin to make debugging easier
-      // In production, you should be more restrictive
-      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.match(/^http:\/\/192\.168\.\d+\.\d+$/)) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Still allow for now to debug
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
