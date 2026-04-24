@@ -8,10 +8,13 @@ import { RagModule } from '../rag/rag.module';
 import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
 import { AuditModule } from '../audit/audit.module';
 
+import { BillingModule } from '../billing/billing.module';
+
 @Module({
   imports: [
     RagModule,
     AuditModule,
+    BillingModule,
     MulterModule.register({
       storage: memoryStorage(),
     }),

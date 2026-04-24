@@ -23,6 +23,11 @@ interface BillingInfo {
     documentsLimit: number;
     membersLimit: number;
   };
+  features: {
+    support: 'standard' | 'priority' | 'dedicated';
+    hasSSO: boolean;
+    hasSLA: boolean;
+  };
 }
 
 const plans = [
@@ -92,9 +97,9 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
 
   const usagePercent = Math.min(
     100,
-    Math.round(
-      (info.usage.questionsUsed / Math.max(1, info.usage.questionsLimit)) * 100,
-    ),
+    info.usage.questionsLimit === -1 
+      ? 0 
+      : Math.round((info.usage.questionsUsed / Math.max(1, info.usage.questionsLimit)) * 100),
   );
   const trialBadge =
     info.plan === "TRIAL" && info.trialEndsAt
@@ -139,7 +144,7 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
             <span className="text-light-2">Questions this month</span>
             <span className="font-mono text-light">
               {info.usage.questionsUsed.toLocaleString()} /{" "}
-              {info.usage.questionsLimit.toLocaleString()}
+              {info.usage.questionsLimit === -1 ? "Unlimited" : info.usage.questionsLimit.toLocaleString()}
             </span>
           </div>
           <div className="h-2 rounded-full bg-dark-4 overflow-hidden">
@@ -153,7 +158,26 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
           </div>
           <p className="text-xs text-light-3">
             {info.usage.questionnairesUsed} questionnaires processed this month
+            {info.usage.questionnairesLimit !== -1 && ` (limit ${info.usage.questionnairesLimit})`}
           </p>
+
+          <div className="pt-4 mt-4 border-t border-white/[0.06] flex flex-wrap gap-2">
+            {info.features.support !== 'standard' && (
+              <span className="px-2.5 py-1 rounded-full bg-brand/10 text-brand text-xs font-semibold">
+                {info.features.support === 'priority' ? 'Priority Support' : 'Dedicated Support'}
+              </span>
+            )}
+            {info.features.hasSSO && (
+              <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold">
+                SSO/SAML Enabled
+              </span>
+            )}
+            {info.features.hasSLA && (
+              <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold">
+                SLA Guarantee
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

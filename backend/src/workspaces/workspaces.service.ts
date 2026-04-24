@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
+import { BillingService } from '../billing/billing.service';
 
 type NotificationPriority = 'info' | 'success' | 'warning' | 'danger';
 
@@ -29,6 +30,7 @@ export class WorkspacesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    private readonly billing: BillingService,
   ) {}
 
   private readKey(workspaceId: string, userId: string) {
@@ -338,6 +340,12 @@ export class WorkspacesService {
     });
   }
 
+  async deleteWorkspace(workspaceId: string) {
+    return this.prisma.workspace.delete({
+      where: { id: workspaceId },
+    });
+  }
+
   async getMembers(workspaceId: string) {
     return this.prisma.workspaceMember.findMany({
       where: { workspaceId },
@@ -357,6 +365,8 @@ export class WorkspacesService {
   }
 
   async inviteMember(workspaceId: string, email: string, role: Role) {
+    await this.billing.checkLimit(workspaceId, 'members');
+
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       // For now we require the user to already have an account. A proper

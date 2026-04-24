@@ -9,9 +9,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiDelete } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -46,6 +47,26 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    setDeletingId(id);
+    try {
+      await apiDelete(`/workspaces/${workspaceId}/questionnaires/${id}`);
+      setItems((prev) => prev.filter((q) => q.id !== id));
+    } catch (err: any) {
+      setError(err.message || "Failed to delete questionnaire");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -128,11 +149,12 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
       </div>
 
       <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
-        <div className="hidden lg:grid grid-cols-[1fr_100px_120px_110px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-white/[0.06] text-xs font-semibold text-light-3 uppercase tracking-wider">
+        <div className="hidden lg:grid grid-cols-[1fr_100px_120px_110px_40px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-white/[0.06] text-xs font-semibold text-light-3 uppercase tracking-wider">
           <span>Name</span>
           <span>Questions</span>
           <span>Status</span>
           <span>Created</span>
+          <span></span>
         </div>
 
         {filtered.length === 0 && (
@@ -150,7 +172,7 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
             <Link
               key={q.id}
               href={`/dashboard/questionnaires/${q.id}`}
-              className="group grid grid-cols-1 lg:grid-cols-[1fr_100px_120px_110px] gap-2 lg:gap-4 px-5 py-4 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors items-center"
+              className="group grid grid-cols-1 lg:grid-cols-[1fr_100px_120px_110px_40px] gap-2 lg:gap-4 px-5 py-4 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors items-center"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <FileSpreadsheet className="w-4 h-4 text-light-4 shrink-0" />
@@ -173,6 +195,20 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
               <span className="text-xs text-light-3">
                 {formatDate(q.createdAt)}
               </span>
+              <div className="flex justify-end">
+                <button
+                  onClick={(e) => handleDelete(e, q.id, q.name)}
+                  disabled={deletingId === q.id}
+                  className="p-1.5 text-light-4 hover:text-danger hover:bg-danger/10 rounded-md transition-colors"
+                  title="Delete questionnaire"
+                >
+                  {deletingId === q.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </Link>
           );
         })}

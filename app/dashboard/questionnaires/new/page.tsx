@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -10,8 +10,9 @@ import {
   ArrowRight,
   Loader2,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
-import { apiUpload, formatApiError } from "@/lib/api";
+import { apiUpload, apiGet, formatApiError } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -31,6 +32,21 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
   const [progress, setProgress] = useState(0);
   const [created, setCreated] = useState<UploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasKnowledge, setHasKnowledge] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet<any[]>(`/workspaces/${workspaceId}/knowledge`)
+      .then((docs) => {
+        if (!cancelled) setHasKnowledge(docs.length > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasKnowledge(true); // hide warning on error
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
 
   const validateAndSetFile = useCallback((f: File) => {
     const ok = /\.(xlsx|xls|csv)$/i.test(f.name);
@@ -82,6 +98,32 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      {hasKnowledge === false && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+        >
+          <div className="flex gap-3 items-start">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-500">
+                Your Knowledge Base is empty
+              </h3>
+              <p className="text-sm text-amber-500/80 mt-1 leading-relaxed">
+                Vaultix AI relies on your uploaded security policies and documents to answer questionnaires accurately. Without them, the AI won't be able to provide answers.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push("/dashboard/knowledge")}
+            className="shrink-0 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-500 text-sm font-medium rounded-lg transition-colors"
+          >
+            Go to Knowledge Base
+          </button>
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="font-heading text-2xl font-bold">Upload Questionnaire</h2>
         <p className="text-light-2 text-sm mt-1">

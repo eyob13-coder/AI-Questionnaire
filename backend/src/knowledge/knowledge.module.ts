@@ -7,9 +7,12 @@ import { KnowledgeController } from './knowledge.controller';
 import { RagModule } from '../rag/rag.module';
 import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
 
+import { BillingModule } from '../billing/billing.module';
+
 @Module({
   imports: [
     RagModule,
+    BillingModule,
     MulterModule.register({
       storage: memoryStorage(),
     }),

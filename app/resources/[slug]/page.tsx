@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock } from "lucide-react";
 import type { Metadata } from "next";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+import { serverGet } from "@/lib/api-server";
 
 interface ResourceArticle {
     slug: string;
@@ -17,11 +16,9 @@ interface ResourceArticle {
 
 async function getArticle(slug: string): Promise<ResourceArticle | null> {
     try {
-        const res = await fetch(`${BACKEND_URL}/api/resources/${slug}`, {
-            next: { revalidate: 3600 },
+        return await serverGet<ResourceArticle>(`/resources/${slug}`, {
+            revalidate: 3600,
         });
-        if (!res.ok) return null;
-        return (await res.json()) as ResourceArticle;
     } catch {
         return null;
     }

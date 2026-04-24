@@ -9,6 +9,7 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
 import type { DocumentProcessingJobData } from '../queue/processors/document-processing.processor';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class KnowledgeService {
@@ -18,6 +19,7 @@ export class KnowledgeService {
     private readonly prisma: PrismaService,
     @InjectQueue(DOCUMENT_PROCESSING_QUEUE)
     private readonly documentQueue: Queue<DocumentProcessingJobData>,
+    private readonly billing: BillingService,
   ) { }
 
   /**
@@ -41,6 +43,9 @@ export class KnowledgeService {
         'Unsupported file format. Use PDF, DOCX, or TXT.',
       );
     }
+
+    // 0. Enforce plan limit
+    await this.billing.checkLimit(workspaceId, 'documents');
 
     // 1. Create document record
     const document = await this.prisma.document.create({

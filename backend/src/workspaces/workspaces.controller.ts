@@ -59,6 +59,15 @@ export class WorkspacesController {
     return this.workspacesService.update(workspaceId, dto);
   }
 
+  @Delete(':workspaceId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Delete workspace (owner only)' })
+  async deleteWorkspace(@Param('workspaceId') workspaceId: string) {
+    await this.workspacesService.deleteWorkspace(workspaceId);
+    return { success: true };
+  }
+
   @Get(':workspaceId/members')
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)

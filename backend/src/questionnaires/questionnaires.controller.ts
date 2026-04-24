@@ -8,7 +8,10 @@ import {
   Param,
   ParseFilePipe,
   MaxFileSizeValidator,
+  Delete,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -20,6 +23,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 import { QuestionnairesService } from './questionnaires.service';
 
@@ -83,5 +87,45 @@ export class QuestionnairesController {
       workspaceId,
       questionnaireId,
     );
+  }
+
+  @Delete(':questionnaireId')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({
+    summary: 'Delete a questionnaire',
+  })
+  async deleteQuestionnaire(
+    @Param('workspaceId') workspaceId: string,
+    @Param('questionnaireId') questionnaireId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.questionnairesService.deleteQuestionnaire(
+      workspaceId,
+      questionnaireId,
+      userId,
+    );
+  }
+
+  @Get(':questionnaireId/export')
+  @Roles(Role.OWNER, Role.EDITOR, Role.VIEWER)
+  @ApiOperation({ summary: 'Export questionnaire as Excel' })
+  async export(
+    @Param('workspaceId') workspaceId: string,
+    @Param('questionnaireId') questionnaireId: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, fileName } = await this.questionnairesService.exportToExcel(
+      workspaceId,
+      questionnaireId,
+    );
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Length': buffer.length,
+    });
+
+    res.end(buffer);
   }
 }

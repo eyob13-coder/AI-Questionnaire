@@ -1,8 +1,9 @@
 "use client";
 
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { ReactNode } from "react";
 import { useWorkspace } from "@/lib/workspace";
+import { VaultixLoader } from "@/components/ui/vaultix-loader";
 
 interface WorkspaceGateProps {
     children: (workspaceId: string) => ReactNode;
@@ -18,8 +19,11 @@ export function WorkspaceGate({ children }: WorkspaceGateProps) {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-20 text-light-3">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading workspace…
+            <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                <VaultixLoader className="w-16 h-16" />
+                <span className="text-sm font-medium text-light-3 animate-pulse tracking-wide uppercase">
+                    Initializing Workspace...
+                </span>
             </div>
         );
     }
@@ -54,8 +58,11 @@ export function PageError({ message }: { message: string }) {
 
 export function PageLoading() {
     return (
-        <div className="flex items-center justify-center py-20 text-light-3">
-            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading…
+        <div className="flex flex-col items-center justify-center py-32 space-y-6">
+            <VaultixLoader className="w-16 h-16" />
+            <span className="text-sm font-medium text-light-3 animate-pulse tracking-wide uppercase">
+                Loading...
+            </span>
         </div>
     );
 }

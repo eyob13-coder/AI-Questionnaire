@@ -1,15 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-const PLAN_LIMITS: Record<
-    string,
-    { questions: number; questionnaires: number; documents: number; members: number; price: string }
-> = {
-    TRIAL: { questions: 100, questionnaires: 3, documents: 5, members: 3, price: '$0' },
-    STARTER: { questions: 500, questionnaires: 5, documents: 10, members: 1, price: '$49' },
-    PRO: { questions: 5000, questionnaires: 9999, documents: 100, members: 10, price: '$149' },
-    ENTERPRISE: { questions: 999999, questionnaires: 999999, documents: 999999, members: 999, price: 'Custom' },
-};
+import { PLAN_LIMITS } from './billing.constants';
 
 @Injectable()
 export class BillingService {
@@ -43,6 +34,11 @@ export class BillingService {
             price: limits.price,
             trialEndsAt: ws.trialEndsAt,
             stripeCustomerId: ws.stripeCustomerId,
+            features: {
+                support: limits.support,
+                hasSSO: limits.hasSSO,
+                hasSLA: limits.hasSLA,
+            },
             usage: {
                 questionsUsed: questionsThisMonth,
                 questionsLimit: limits.questions,
@@ -52,5 +48,54 @@ export class BillingService {
                 membersLimit: limits.members,
             },
         };
+    }
+
+    async checkLimit(
+        workspaceId: string,
+        limitType: 'questions' | 'questionnaires' | 'documents' | 'members',
+        requiredAmount: number = 1
+    ): Promise<void> {
+        const ws = await this.prisma.workspace.findUnique({
+            where: { id: workspaceId },
+        });
+        if (!ws) throw new NotFoundException('Workspace not found');
+
+        const limits = PLAN_LIMITS[ws.plan] ?? PLAN_LIMITS.TRIAL;
+        const limit = limits[limitType];
+
+        // -1 means unlimited
+        if (limit === -1) return;
+
+        let currentUsage = 0;
+
+        if (limitType === 'members') {
+            currentUsage = await this.prisma.workspaceMember.count({ where: { workspaceId } });
+        } else if (limitType === 'documents') {
+            currentUsage = await this.prisma.document.count({ where: { workspaceId } });
+        } else {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+
+            if (limitType === 'questionnaires') {
+                currentUsage = await this.prisma.questionnaire.count({
+                    where: { workspaceId, createdAt: { gte: startOfMonth } },
+                });
+            } else if (limitType === 'questions') {
+                currentUsage = await this.prisma.question.count({
+                    where: {
+                        questionnaire: { workspaceId },
+                        createdAt: { gte: startOfMonth },
+                    },
+                });
+            }
+        }
+
+        if (currentUsage + requiredAmount > limit) {
+            throw new HttpException(
+                `Plan limit reached for ${limitType}. You have used ${currentUsage} out of ${limit}. Please upgrade your plan.`,
+                HttpStatus.PAYMENT_REQUIRED
+            );
+        }
     }
 }

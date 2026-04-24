@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth/constants";
+import { serverFetchRaw } from "@/lib/api-server";
 
 export function hasRequestSession(request: NextRequest): boolean {
   return Boolean(request.cookies.get(AUTH_SESSION_COOKIE)?.value);
@@ -20,14 +21,9 @@ export async function hasValidatedBackendSession(
     return false;
   }
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-
   try {
-    const response = await fetch(`${apiBaseUrl}/auth/me`, {
-      method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
+    const response = await serverFetchRaw("GET", "/auth/me", {
+      headers: { cookie: cookieHeader },
       cache: "no-store",
     });
 

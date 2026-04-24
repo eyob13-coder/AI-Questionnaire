@@ -12,6 +12,7 @@ import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
 import type { QuestionnaireGenerationJobData } from '../queue/processors/questionnaire-generation.processor';
 import * as xlsx from 'xlsx';
 import { AuditService } from '../audit/audit.service';
+import { BillingService } from '../billing/billing.service';
 
 type ExportFormat = 'xlsx' | 'csv';
 
@@ -31,6 +32,7 @@ export class QuestionnairesService {
     @InjectQueue(QUESTIONNAIRE_GENERATION_QUEUE)
     private readonly generationQueue: Queue<QuestionnaireGenerationJobData>,
     private readonly auditService: AuditService,
+    private readonly billing: BillingService,
   ) {}
 
   private normalizeExportFormat(format?: string): ExportFormat {
@@ -146,7 +148,11 @@ export class QuestionnairesService {
       );
     }
 
-    // 2. Create the Questionnaire record
+    // 2. Enforce Plan Limits
+    await this.billing.checkLimit(workspaceId, 'questionnaires', 1);
+    await this.billing.checkLimit(workspaceId, 'questions', questionsText.length);
+
+    // 3. Create the Questionnaire record
     let questionnaireId: string | null = null;
 
     let questionnaire: {
@@ -342,6 +348,76 @@ export class QuestionnairesService {
       fileName,
       contentType,
       buffer,
+    };
+  }
+
+  async deleteQuestionnaire(
+    workspaceId: string,
+    questionnaireId: string,
+    userId: string,
+  ) {
+    const questionnaire = await this.prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, workspaceId },
+    });
+
+    if (!questionnaire) {
+      throw new NotFoundException('Questionnaire not found');
+    }
+
+    await this.prisma.questionnaire.delete({
+      where: { id: questionnaireId },
+    });
+
+    await this.auditService.logAction({
+      userId,
+      workspaceId,
+      action: 'questionnaire.deleted',
+      entity: questionnaire.name,
+      entityId: questionnaire.id,
+      details: {
+        totalQuestions: questionnaire.totalQuestions,
+      },
+    });
+
+    return { success: true };
+  }
+
+  async exportToExcel(workspaceId: string, id: string) {
+    const questionnaire = await this.prisma.questionnaire.findUnique({
+      where: { id, workspaceId },
+      include: {
+        questions: {
+          orderBy: { rowIndex: 'asc' },
+        },
+      },
+    });
+
+    if (!questionnaire) {
+      throw new NotFoundException('Questionnaire not found');
+    }
+
+    const data = questionnaire.questions.map((q) => ({
+      '#': q.rowIndex,
+      Question: q.questionText,
+      'AI Answer': q.answerText || '',
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(data);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Answers');
+
+    // Set column widths
+    const wscols = [
+      { wch: 5 }, // #
+      { wch: 60 }, // Question
+      { wch: 80 }, // AI Answer (wider for better reading)
+    ];
+    worksheet['!cols'] = wscols;
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return {
+      buffer,
+      fileName: `${questionnaire.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_exported.xlsx`,
     };
   }
 }

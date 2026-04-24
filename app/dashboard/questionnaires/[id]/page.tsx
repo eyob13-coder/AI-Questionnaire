@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { apiGet } from "@/lib/api";
+import api, { apiGet } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
   WorkspaceGate,
@@ -101,6 +101,7 @@ function QuestionnaireContent({
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +138,42 @@ function QuestionnaireContent({
       if (interval) clearInterval(interval);
     };
   }, [workspaceId, questionnaireId]);
+
+  const handleExport = async () => {
+    if (!data || exporting) return;
+    setExporting(true);
+
+    try {
+      const response = await api.get(
+        `/workspaces/${workspaceId}/questionnaires/${questionnaireId}/export`,
+        { responseType: "blob" },
+      );
+
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Extract filename from header or use fallback
+      const contentDisposition = response.headers["content-disposition"];
+      let fileName = `${data.name}_exported.xlsx`;
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch?.[1]) fileName = fileNameMatch[1];
+      }
+
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed", e);
+      alert("Failed to export questionnaire. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loading) return <PageLoading />;
   if (error || !data) return <PageError message={error || "Not found"} />;
@@ -193,12 +230,16 @@ function QuestionnaireContent({
               </span>
             )}
             <button
-              disabled
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-brand/50 rounded-full cursor-not-allowed"
-              title="Coming soon"
+              onClick={handleExport}
+              disabled={exporting || isGenerating}
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-brand hover:bg-brand-hover disabled:bg-brand/50 rounded-full transition-all disabled:cursor-not-allowed cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
-              Export
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 " />
+              )}
+              {exporting ? "Exporting..." : "Export"}
             </button>
           </div>
         </div>

@@ -3,6 +3,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
   Zap,
@@ -49,6 +50,7 @@ import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { SITE_URL } from "@/lib/seo";
 import { subscribeNewsletter } from "@/lib/resources";
 import { formatApiError } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
 
 /* ─── Animation helpers ─── */
 const fadeUp = {
@@ -396,6 +398,7 @@ function Navbar() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
+  const { data: session } = useSession();
 
   useEffect(() => {
     setMounted(true);
@@ -418,9 +421,9 @@ function Navbar() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center shadow-lg shadow-brand/20">
-              <VaultixIcon className="w-5 h-5" />
+          <Link href="/" className="flex items-center gap-2.5 group overflow-hidden">
+            <div className="relative w-10 h-10 flex-shrink-0 transition-transform duration-300">
+              <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
             </div>
             <span className="font-heading text-xl font-bold tracking-tight">
               Vault<span className="text-brand">ix</span>
@@ -486,18 +489,29 @@ function Navbar() {
               </button>
             )}
 
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm text-light-2 hover:text-light transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
-            >
-              Start Free Trial
-            </Link>
+            {mounted && session ? (
+              <Link
+                href="/dashboard"
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm text-light-2 hover:text-light transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                >
+                  Start Free Trial
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile right side */}
@@ -590,18 +604,29 @@ function Navbar() {
               Why Vaultix
             </a>
             <hr className="border-white/[0.06]" />
-            <Link
-              href="/login"
-              className="px-3 py-2 text-light-2 hover:text-light transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="mt-1 bg-brand text-white font-semibold px-5 py-3 rounded-full text-center text-sm"
-            >
-              Start Free Trial
-            </Link>
+            {mounted && session ? (
+              <Link
+                href="/dashboard"
+                className="mt-1 bg-brand text-white font-semibold px-5 py-3 rounded-full text-center text-sm"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-3 py-2 text-light-2 hover:text-light transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="mt-1 bg-brand text-white font-semibold px-5 py-3 rounded-full text-center text-sm"
+                >
+                  Start Free Trial
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
       )}
@@ -611,6 +636,13 @@ function Navbar() {
 
 /* ═══════ HERO ═══════ */
 function Hero() {
+  const { data: session } = useSession();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
       {/* Bg effects */}
@@ -663,13 +695,23 @@ function Hero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link
-              href="/register"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            {mounted && session ? (
+              <Link
+                href="/dashboard"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
+              >
+                Start Free Trial
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
             <a
               href="#how-it-works"
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-light border border-white/10 hover:border-white/20 rounded-full hover:bg-white/[0.04] transition-all duration-200"
@@ -720,8 +762,38 @@ function Hero() {
   );
 }
 
+function TypewriterText({ text, isHovered }: { text: string; isHovered: boolean }) {
+  const [displayedText, setDisplayedText] = useState(text);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setDisplayedText(text);
+      return;
+    }
+
+    setDisplayedText("");
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.slice(0, i + 1));
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 15);
+
+    return () => clearInterval(interval);
+  }, [isHovered, text]);
+
+  return (
+    <span className="relative">
+      {displayedText}
+      {isHovered && displayedText.length < text.length && (
+        <span className="inline-block w-1 h-2.5 ml-0.5 bg-brand animate-pulse align-middle" />
+      )}
+    </span>
+  );
+}
+
 /* ═══════ PRODUCT MOCKUP ═══════ */
-function ProductMockup() {
+const ProductMockup = () => {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   const confColor = (c: number) =>
@@ -820,7 +892,7 @@ function ProductMockup() {
               </span>
 
               <span className="text-light-2 truncate text-xs leading-relaxed pt-0.5">
-                {row.a}
+                <TypewriterText text={row.a} isHovered={isHovered} />
               </span>
 
               <span
@@ -844,118 +916,6 @@ function ProductMockup() {
               </span>
             </motion.div>
 
-            {/* ── Expanded detail panel ── */}
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.28,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  className="overflow-hidden"
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                >
-                  <div className="mx-4 sm:mx-5 mb-3 rounded-xl bg-dark-3/70 border border-white/[0.07] backdrop-blur-sm overflow-hidden">
-                    {/* Brand glow strip at top */}
-                    <div className="h-[2px] bg-gradient-to-r from-brand via-orange-400 to-transparent" />
-
-                    <div className="p-4 space-y-4">
-                      {/* Full answer */}
-                      <p className="text-xs text-light-2 leading-relaxed">
-                        {row.full}
-                      </p>
-
-                      {/* Confidence bar */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold text-light-3 uppercase tracking-wider">
-                            Confidence
-                          </span>
-                          <span
-                            className={`text-xs font-mono font-bold ${confColor(row.conf)}`}
-                          >
-                            {row.conf}% · {confLabel(row.conf)}
-                          </span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-dark-5 overflow-hidden">
-                          <motion.div
-                            className={`h-full rounded-full bg-gradient-to-r ${confBar(row.conf)} shadow-sm`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${row.conf}%` }}
-                            transition={{
-                              duration: 0.6,
-                              ease: "easeOut",
-                              delay: 0.05,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Citations */}
-                      {row.citations.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-semibold text-light-3 uppercase tracking-wider">
-                            Sources
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {row.citations.map((cite, ci) => (
-                              <motion.span
-                                key={ci}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 + ci * 0.06 }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-4/80 border border-white/[0.06] text-xs text-light-3 hover:border-brand/30 hover:text-light-2 transition-all cursor-pointer"
-                              >
-                                <FileText className="w-3 h-3 text-brand shrink-0" />
-                                {cite}
-                                <ExternalLink className="w-2.5 h-2.5 text-light-4" />
-                              </motion.span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-white/[0.05]">
-                        {row.status !== "Approved" && (
-                          <motion.button
-                            initial={{ opacity: 0, x: -6 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.08 }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-success bg-success/10 hover:bg-success/20 transition-all"
-                          >
-                            <Check className="w-3 h-3" />
-                            Approve
-                          </motion.button>
-                        )}
-                        <motion.button
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.12 }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-light-3 bg-white/[0.04] hover:bg-white/[0.08] hover:text-light-2 transition-all"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          Regenerate
-                        </motion.button>
-                        <motion.button
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.16 }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-light-3 bg-white/[0.04] hover:bg-white/[0.08] hover:text-light-2 transition-all"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          Edit
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         );
       })}
@@ -2859,6 +2819,13 @@ function FAQ() {
 
 /* ═══════ CTA ═══════ */
 function CTASection() {
+  const { data: session } = useSession();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <section className="relative py-24 sm:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-dark via-dark-2 to-dark" />
@@ -2875,13 +2842,23 @@ function CTASection() {
             faster. Start your free trial today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            {mounted && session ? (
+              <Link
+                href="/dashboard"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-brand hover:bg-brand-hover rounded-full transition-all duration-200 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
+              >
+                Start Free Trial
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
             <Link
               href="/contact"
               className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 text-base font-medium text-light border border-white/10 hover:border-white/20 rounded-full hover:bg-white/[0.04] transition-all duration-200"
@@ -2942,9 +2919,9 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center">
-                <VaultixIcon className="w-4 h-4" />
+            <div className="flex items-center gap-2.5 mb-4 group overflow-hidden">
+              <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+                <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" />
               </div>
               <span className="font-heading text-lg font-bold">
                 Vault<span className="text-brand">ix</span>
