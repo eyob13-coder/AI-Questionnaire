@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { emailOTPClient } from "better-auth/client/plugins";
 
 function resolveAuthBaseUrl(): string {
   if (typeof window !== "undefined") {
@@ -10,6 +11,16 @@ function resolveAuthBaseUrl(): string {
 
 export const authClient = createAuthClient({
   baseURL: resolveAuthBaseUrl(),
+  plugins: [emailOTPClient()],
 });
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const {
+  signIn,
+  signUp,
+  signOut,
+  useSession,
+  emailOtp,
+  forgetPassword,
+  resetPassword,
+  sendVerificationEmail,
+} = authClient;

@@ -8,7 +8,7 @@ import {
     Check, Sparkles, Shield, Brain, Zap, WifiOff,
 } from "lucide-react";
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
-import { signUp, signIn } from "@/lib/auth-client";
+import { signUp, signIn, emailOtp } from "@/lib/auth-client";
 import { formatAuthError, getOfflineMessage } from "@/lib/auth-errors";
 import { validateEmail } from "@/lib/email-validation";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
@@ -23,7 +23,7 @@ const perks = [
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<"form" | "success">("form");
+    const [step, setStep] = useState<"form" | "otp" | "success">("form");
     const [error, setError] = useState("");
     const [isOffline, setIsOffline] = useState(false);
     const [form, setForm] = useState({
@@ -32,6 +32,16 @@ export default function RegisterPage() {
         company: "",
         password: "",
     });
+    const [otp, setOtp] = useState("");
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otpError, setOtpError] = useState("");
+    const [resendCooldown, setResendCooldown] = useState(0);
+
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const t = setInterval(() => setResendCooldown((c) => Math.max(0, c - 1)), 1000);
+        return () => clearInterval(t);
+    }, [resendCooldown]);
 
     const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm((prev) => ({ ...prev, [k]: e.target.value }));
@@ -114,11 +124,72 @@ export default function RegisterPage() {
                 }).catch(() => {});
             }
 
-            setStep("success");
+            // 4. Move to OTP step. Better Auth has already sent the verification
+            //    code on signup (sendVerificationOnSignUp on the email-OTP plugin).
+            setStep("otp");
+            setResendCooldown(45);
+            toast.success("Check your email", {
+                description: `We sent a 6-digit code to ${form.email}.`,
+            });
         } catch (err) {
             setError(formatAuthError(err, "Unable to create your account right now."));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setOtpError("");
+
+        const code = otp.replace(/\D/g, "").slice(0, 6);
+        if (code.length !== 6) {
+            setOtpError("Enter the 6-digit code from your email.");
+            return;
+        }
+
+        setOtpLoading(true);
+        try {
+            const { error: verifyError } = await emailOtp.verifyEmail({
+                email: form.email.trim().toLowerCase(),
+                otp: code,
+            });
+
+            if (verifyError) {
+                const msg = formatAuthError(verifyError, "That code didn't work.");
+                setOtpError(msg);
+                toast.error("Verification failed", { description: msg });
+                setOtp("");
+                return;
+            }
+
+            toast.success("Email verified", { description: "Your workspace is ready." });
+            setStep("success");
+        } catch (err) {
+            setOtpError(formatAuthError(err, "Couldn't verify the code right now."));
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendCooldown > 0) return;
+        setOtpError("");
+        try {
+            const { error: sendError } = await emailOtp.sendVerificationOtp({
+                email: form.email.trim().toLowerCase(),
+                type: "email-verification",
+            });
+            if (sendError) {
+                toast.error("Couldn't resend", {
+                    description: formatAuthError(sendError, ""),
+                });
+                return;
+            }
+            setResendCooldown(45);
+            toast.success("Code sent", { description: "Check your inbox for a new code." });
+        } catch (err) {
+            toast.error("Couldn't resend", { description: formatAuthError(err, "") });
         }
     };
 
@@ -213,6 +284,82 @@ export default function RegisterPage() {
                                 Go to Dashboard
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
+                        </motion.div>
+                    ) : step === "otp" ? (
+                        /* ── OTP verification step ── */
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="text-center mb-6">
+                                <div className="w-14 h-14 rounded-2xl bg-brand/10 border border-brand/20 flex items-center justify-center mx-auto mb-4">
+                                    <Mail className="w-7 h-7 text-brand" />
+                                </div>
+                                <h2 className="font-heading text-2xl font-bold mb-2">Verify your email</h2>
+                                <p className="text-light-2 text-sm">
+                                    We sent a 6-digit code to{" "}
+                                    <span className="text-light font-medium">{form.email}</span>.
+                                    The code expires in 10 minutes.
+                                </p>
+                            </div>
+
+                            {otpError && (
+                                <div className="mb-4 p-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
+                                    {otpError}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleVerifyOtp} className="space-y-4">
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    autoFocus
+                                    maxLength={6}
+                                    placeholder="······"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="w-full text-center text-3xl font-mono tracking-[0.6em] py-4 rounded-xl bg-dark-3/50 border border-white/[0.08] text-light placeholder-light-3 outline-none focus:border-brand/40 focus:bg-dark-3/80 transition-all"
+                                />
+
+                                <button
+                                    type="submit"
+                                    disabled={otpLoading || otp.length !== 6}
+                                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-brand hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(249,115,22,0.35)]"
+                                >
+                                    {otpLoading ? "Verifying…" : (
+                                        <>
+                                            Verify & continue
+                                            <ArrowRight className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            <div className="mt-5 text-center text-sm text-light-3">
+                                Didn&apos;t get the code?{" "}
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    disabled={resendCooldown > 0}
+                                    className="text-brand hover:text-brand-light disabled:text-light-3 disabled:cursor-not-allowed font-medium transition-colors"
+                                >
+                                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setStep("form");
+                                    setOtp("");
+                                    setOtpError("");
+                                }}
+                                className="mt-3 w-full text-center text-xs text-light-3 hover:text-light-2 transition-colors"
+                            >
+                                Use a different email
+                            </button>
                         </motion.div>
                     ) : (
                         <>

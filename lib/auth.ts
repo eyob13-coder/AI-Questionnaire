@@ -1,8 +1,14 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { emailOTP } from "better-auth/plugins";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as pg from "pg";
+import {
+  sendEmail,
+  otpEmailTemplate,
+  passwordResetEmailTemplate,
+} from "@/lib/mailer";
 
 function parseSslConfig(databaseUrl: string): {
   connectionString: string;
@@ -116,6 +122,21 @@ export const auth = betterAuth({
   trustedOrigins,
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      const tpl = passwordResetEmailTemplate(url);
+      await sendEmail({
+        to: user.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+      });
+    },
+    resetPasswordTokenExpiresIn: 3600,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
   },
   socialProviders: {
     google: {
@@ -131,6 +152,23 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600,
+      allowedAttempts: 5,
+      sendVerificationOnSignUp: true,
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        const tpl = otpEmailTemplate(otp, type);
+        await sendEmail({
+          to: email,
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+        });
+      },
+    }),
+  ],
   advanced: {
     defaultCookieAttributes: {
       secure: process.env.NODE_ENV === "production",

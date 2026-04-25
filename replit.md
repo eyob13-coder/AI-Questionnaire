@@ -8,6 +8,15 @@ Next.js 16 app (App Router, Turbopack) imported from Vercel. Uses React 19, Tail
 - `next.config.ts` allows `*.replit.dev` and `*.replit.app` dev origins so the Replit preview iframe works.
 - No environment variables are required to boot the marketing/landing UI. Features that hit the DB / backend / payments need secrets wired through the Secrets store later (e.g. `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `STRIPE_*`).
 
+## Authentication
+
+- Better Auth wired in `lib/auth.ts` with Prisma adapter, Google SSO, email + password, and the `emailOTP` plugin (`better-auth/plugins`). Email verification is **required** before sign-in (`requireEmailVerification: true`); a 6-digit OTP is sent on signup (10-min expiry, 5 attempts).
+- Client (`lib/auth-client.ts`) extends with `emailOTPClient`, exporting `emailOtp`, `forgetPassword`, `resetPassword`, `sendVerificationEmail`.
+- Mailer: `lib/mailer.ts` wraps Resend (`RESEND_API_KEY`, `EMAIL_FROM`). Includes branded HTML templates for OTP and password reset; no-ops with a console warning when the key is missing.
+- Auth pages: `/login`, `/register` (now with OTP step), `/forgot-password`, `/reset-password?token=…`.
+- Email validation utility: `lib/email-validation.ts` (RFC regex + ~30 disposable-domain block + common-typo guard) is called before every signup / signin / reset request.
+- Trial fraud guard: `lib/fingerprint.ts` (canvas + UA + screen + tz SHA-256) + `app/api/trial-check/route.ts` (`POST {action:"check"|"claim"}`) backed by the `TrialClaim` Prisma model. Salted SHA-256 IP + fingerprint hashes; same device or IP can only claim one free trial. Wired into the register page (pre-check before email/Google signup, post-claim after success).
+
 ## Stripe billing
 
 - Plan price config: `lib/plans.ts` (Starter $49/mo, Pro $149/mo, Enterprise = contact sales).
