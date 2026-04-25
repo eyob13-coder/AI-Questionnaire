@@ -3,6 +3,8 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  OnModuleInit,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -11,9 +13,13 @@ import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
 import type { DocumentProcessingJobData } from '../queue/processors/document-processing.processor';
 import { BillingService } from '../billing/billing.service';
 
+const RECONCILE_INTERVAL_MS = 60_000;
+const STUCK_THRESHOLD_MS = 15 * 60_000;
+
 @Injectable()
-export class KnowledgeService {
+export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(KnowledgeService.name);
+  private reconcileTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -21,6 +27,72 @@ export class KnowledgeService {
     private readonly documentQueue: Queue<DocumentProcessingJobData>,
     private readonly billing: BillingService,
   ) { }
+
+  async onModuleInit() {
+    // Run an immediate reconciliation, then every minute. This recovers
+    // documents that finished chunking but never got their final
+    // "status = READY" update (e.g. worker killed by a dev restart).
+    await this.reconcileStuckDocuments();
+    this.reconcileTimer = setInterval(
+      () => {
+        this.reconcileStuckDocuments().catch((err) =>
+          this.logger.error('Document reconciliation failed', err as Error),
+        );
+      },
+      RECONCILE_INTERVAL_MS,
+    );
+  }
+
+  onModuleDestroy() {
+    if (this.reconcileTimer) {
+      clearInterval(this.reconcileTimer);
+      this.reconcileTimer = null;
+    }
+  }
+
+  /**
+   * Reconciles documents stuck in PROCESSING:
+   * - If they already have at least one chunk → mark READY.
+   * - If they have no chunks and have been processing > 15 min → mark FAILED.
+   */
+  private async reconcileStuckDocuments() {
+    const stuck = await this.prisma.document.findMany({
+      where: { status: 'PROCESSING' },
+      include: { _count: { select: { chunks: true } } },
+    });
+
+    if (stuck.length === 0) return;
+
+    const now = Date.now();
+    let recovered = 0;
+    let failed = 0;
+
+    for (const doc of stuck) {
+      if (doc._count.chunks > 0) {
+        await this.prisma.document.update({
+          where: { id: doc.id },
+          data: { status: 'READY' },
+        });
+        recovered++;
+        continue;
+      }
+
+      const ageMs = now - doc.updatedAt.getTime();
+      if (ageMs > STUCK_THRESHOLD_MS) {
+        await this.prisma.document.update({
+          where: { id: doc.id },
+          data: { status: 'FAILED' },
+        });
+        failed++;
+      }
+    }
+
+    if (recovered > 0 || failed > 0) {
+      this.logger.log(
+        `Reconciled stuck documents — recovered: ${recovered}, marked failed: ${failed}`,
+      );
+    }
+  }
 
   /**
    * Upload a document and enqueue it for async processing via BullMQ.
