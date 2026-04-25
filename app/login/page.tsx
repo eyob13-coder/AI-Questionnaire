@@ -8,6 +8,8 @@ import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { signIn } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatAuthError, getOfflineMessage } from "@/lib/auth-errors";
+import { validateEmail } from "@/lib/email-validation";
+import { toast } from "sonner";
 
 const testimonial = {
     quote: "Vaultix cut our security questionnaire turnaround from 2 weeks to 2 hours. Absolutely game-changing for our sales cycle.",
@@ -62,11 +64,18 @@ export default function LoginPage() {
             return;
         }
 
+        const emailCheck = validateEmail(email);
+        if (!emailCheck.valid) {
+            setError(emailCheck.reason || "Please enter a valid email address.");
+            toast.error("Invalid email", { description: emailCheck.reason });
+            return;
+        }
+
         setLoading(true);
 
         try {
             const { error: signInError } = await signIn.email({
-                email,
+                email: email.trim().toLowerCase(),
                 password,
                 callbackURL,
             });

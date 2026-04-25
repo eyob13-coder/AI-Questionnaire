@@ -75,6 +75,22 @@ model Verification {
   @@map("verifications")
 }
 
+// Tracks free-trial signups by device + network so the same device
+// or IP can't claim multiple free trials.
+model TrialClaim {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  email           String
+  ipHash          String   @map("ip_hash")
+  fingerprintHash String?  @map("fingerprint_hash")
+  userAgent       String?  @map("user_agent")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([ipHash])
+  @@index([fingerprintHash])
+  @@map("trial_claims")
+}
+
 model Workspace {
   id             String   @id @default(cuid())
   name           String

@@ -10,6 +10,9 @@ import {
 import { VaultixIcon } from "@/components/ui/vaultix-icon";
 import { signUp, signIn } from "@/lib/auth-client";
 import { formatAuthError, getOfflineMessage } from "@/lib/auth-errors";
+import { validateEmail } from "@/lib/email-validation";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { toast } from "sonner";
 
 const perks = [
     { icon: Zap, text: "Process 300+ questions in minutes" },
@@ -57,11 +60,35 @@ export default function RegisterPage() {
             return;
         }
 
+        const emailCheck = validateEmail(form.email);
+        if (!emailCheck.valid) {
+            setError(emailCheck.reason || "Please enter a valid email address.");
+            toast.error("Invalid email", { description: emailCheck.reason });
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const { error: signUpError } = await signUp.email({
-                email: form.email,
+            // 1. Trial fraud pre-check (device + network).
+            const fingerprint = await getDeviceFingerprint();
+            const trialCheck = await fetch("/api/trial-check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "check", fingerprint, email: form.email }),
+            }).then((r) => r.json());
+
+            if (!trialCheck.allowed) {
+                const msg = trialCheck.reason || "A free trial has already been used here.";
+                setError(msg);
+                toast.error("Free trial unavailable", { description: msg });
+                setLoading(false);
+                return;
+            }
+
+            // 2. Create the account.
+            const { data: signUpData, error: signUpError } = await signUp.email({
+                email: form.email.trim().toLowerCase(),
                 password: form.password,
                 name: form.name,
                 callbackURL: "/dashboard",
@@ -69,9 +96,25 @@ export default function RegisterPage() {
 
             if (signUpError) {
                 setError(formatAuthError(signUpError, "Failed to create account"));
-            } else {
-                setStep("success");
+                return;
             }
+
+            // 3. Record the trial claim against this device + IP.
+            const newUserId = (signUpData as { user?: { id?: string } } | null)?.user?.id;
+            if (newUserId) {
+                await fetch("/api/trial-check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "claim",
+                        userId: newUserId,
+                        email: form.email,
+                        fingerprint,
+                    }),
+                }).catch(() => {});
+            }
+
+            setStep("success");
         } catch (err) {
             setError(formatAuthError(err, "Unable to create your account right now."));
         } finally {
@@ -88,6 +131,21 @@ export default function RegisterPage() {
         }
 
         try {
+            // Pre-check trial eligibility before redirecting to Google.
+            const fingerprint = await getDeviceFingerprint();
+            const trialCheck = await fetch("/api/trial-check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "check", fingerprint }),
+            }).then((r) => r.json());
+
+            if (!trialCheck.allowed) {
+                const msg = trialCheck.reason || "A free trial has already been used here.";
+                setError(msg);
+                toast.error("Free trial unavailable", { description: msg });
+                return;
+            }
+
             await signIn.social({
                 provider: "google",
                 callbackURL: "/dashboard",
