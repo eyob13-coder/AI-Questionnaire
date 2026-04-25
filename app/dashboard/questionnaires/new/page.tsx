@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiUpload, apiGet, formatApiError } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
 import {
@@ -51,7 +52,9 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
   const validateAndSetFile = useCallback((f: File) => {
     const ok = /\.(xlsx|xls|csv)$/i.test(f.name);
     if (!ok) {
-      alert("Please upload a .xlsx or .csv file");
+      toast.error("Unsupported file type", {
+        description: "Please upload a .xlsx or .csv file.",
+      });
       return;
     }
     setFile(f);

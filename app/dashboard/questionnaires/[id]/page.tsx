@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import api, { apiGet } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
@@ -169,7 +170,9 @@ function QuestionnaireContent({
       window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Export failed", e);
-      alert("Failed to export questionnaire. Please try again.");
+      toast.error("Export failed", {
+        description: "We couldn't export the questionnaire. Please try again.",
+      });
     } finally {
       setExporting(false);
     }

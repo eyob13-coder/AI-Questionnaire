@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -97,6 +98,19 @@ export default function RootLayout({
     >
       <body className="min-h-screen">
         <AuthProvider>{children}</AuthProvider>
+        <Toaster
+          position="top-right"
+          theme="dark"
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              background: "#0f1419",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#f5f5f5",
+            },
+          }}
+        />
       </body>
     </html>
   );

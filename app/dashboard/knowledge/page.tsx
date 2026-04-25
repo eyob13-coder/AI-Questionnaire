@@ -21,6 +21,7 @@ import {
   Search,
   HardDrive,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiDelete, apiGet, apiUpload, formatApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
 import {
@@ -110,9 +111,14 @@ function KnowledgeContent({
 
     try {
       await apiUpload(`/workspaces/${workspaceId}/knowledge/upload`, file);
+      toast.success("Document uploaded", {
+        description: `${file.name} is being processed.`,
+      });
       await reload();
     } catch (nextError) {
-      alert(formatApiError(nextError, "Upload failed"));
+      toast.error("Upload failed", {
+        description: formatApiError(nextError, "Upload failed"),
+      });
     } finally {
       setUploading(false);
     }
@@ -124,8 +130,11 @@ function KnowledgeContent({
     try {
       await apiDelete(`/workspaces/${workspaceId}/knowledge/${id}`);
       setDocs((current) => current.filter((doc) => doc.id !== id));
+      toast.success("Document deleted");
     } catch (nextError) {
-      alert(formatApiError(nextError, "Delete failed"));
+      toast.error("Delete failed", {
+        description: formatApiError(nextError, "Delete failed"),
+      });
     }
   };
 

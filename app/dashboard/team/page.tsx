@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { UserPlus, Trash2, Mail, Crown, Eye, Pencil, Search } from "lucide-react";
+import { toast } from "sonner";
 import { apiDelete, apiGet, apiPost, formatApiError } from "@/lib/api";
 import { formatDate, initialsFromName } from "@/lib/format";
 import {
@@ -105,9 +106,14 @@ function TeamContent({
       });
 
       setInviteEmail("");
+      toast.success("Invitation sent", {
+        description: `${inviteEmail.trim()} was invited as ${inviteRole.toLowerCase()}.`,
+      });
       await reload();
     } catch (nextError) {
-      alert(formatApiError(nextError, "Failed to invite member"));
+      toast.error("Failed to invite member", {
+        description: formatApiError(nextError, "Failed to invite member"),
+      });
     } finally {
       setInviting(false);
     }
@@ -119,8 +125,11 @@ function TeamContent({
     try {
       await apiDelete(`/workspaces/${workspaceId}/members/${memberId}`);
       setMembers((current) => current.filter((member) => member.id !== memberId));
+      toast.success("Member removed");
     } catch (nextError) {
-      alert(formatApiError(nextError, "Failed to remove member"));
+      toast.error("Failed to remove member", {
+        description: formatApiError(nextError, "Failed to remove member"),
+      });
     }
   };
 
