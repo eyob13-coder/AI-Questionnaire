@@ -3,8 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RagService } from '../../rag/rag.service';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse');
+import { PDFParse } from 'pdf-parse';
 import * as mammoth from 'mammoth';
 
 export interface DocumentProcessingJobData {
@@ -37,8 +36,10 @@ export class DocumentProcessingProcessor extends WorkerHost {
       // 1. Extract text
       let extractedText = '';
       if (fileType === 'application/pdf') {
-        const data = (await pdfParse(buffer)) as { text: string };
+        const parser = new PDFParse({ data: buffer });
+        const data = await parser.getText();
         extractedText = data.text;
+        await parser.destroy();
       } else if (
         fileType ===
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -67,7 +68,8 @@ export class DocumentProcessingProcessor extends WorkerHost {
 
         if (embeddingAvailable) {
           try {
-            embeddingVector = await this.ragService.generateEmbedding(textChunk);
+            embeddingVector =
+              await this.ragService.generateEmbedding(textChunk);
           } catch (embeddingError) {
             embeddingAvailable = false;
             this.logger.warn(
@@ -77,6 +79,7 @@ export class DocumentProcessingProcessor extends WorkerHost {
         }
 
         if (embeddingVector) {
+          const vectorString = `[${embeddingVector.join(',')}]`;
           await this.prisma.$executeRaw`
             INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at, embedding)
             VALUES (
@@ -85,7 +88,7 @@ export class DocumentProcessingProcessor extends WorkerHost {
               ${i}, 
               ${documentId}, 
               NOW(), 
-              ${embeddingVector}::vector
+              ${vectorString}::vector
             )
           `;
         } else {
@@ -121,10 +124,7 @@ export class DocumentProcessingProcessor extends WorkerHost {
   }
 
   private chunkText(text: string, chunkSize: number): string[] {
-    const regex = new RegExp(
-      `.{1,${chunkSize}}(\\s|$)|.{1,${chunkSize}}`,
-      'g',
-    );
+    const regex = new RegExp(`.{1,${chunkSize}}(\\s|$)|.{1,${chunkSize}}`, 'g');
     return text.match(regex) || [];
   }
 }
