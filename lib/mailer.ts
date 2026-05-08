@@ -22,9 +22,10 @@ interface SendOptions {
 export async function sendEmail(opts: SendOptions): Promise<void> {
   const resend = getResend();
   if (!resend) {
-    console.warn(
-      `[mailer] RESEND_API_KEY not set — would have sent: ${opts.subject} → ${opts.to}`,
-    );
+    console.warn(`[mailer] missing RESEND_API_KEY`, {
+      to: opts.to,
+      subject: opts.subject,
+    });
     return;
   }
 
@@ -38,9 +39,11 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
     });
     if (result.error) {
       console.error("[mailer] Resend rejected send:", result.error);
+      throw new Error("Resend rejected email send");
     }
   } catch (err) {
     console.error("[mailer] sendEmail failed:", err);
+    throw err;
   }
 }
 

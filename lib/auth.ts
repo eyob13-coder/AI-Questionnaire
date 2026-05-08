@@ -160,6 +160,7 @@ export const auth = betterAuth({
       sendVerificationOnSignUp: true,
       sendVerificationOTP: async ({ email, otp, type }) => {
         const tpl = otpEmailTemplate(otp, type);
+        console.log("[auth] sending otp", { email, type });
         await sendEmail({
           to: email,
           subject: tpl.subject,
