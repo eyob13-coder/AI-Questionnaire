@@ -90,27 +90,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // 1. Trial fraud pre-check (device + network).
-            const fingerprint = await getDeviceFingerprint();
-            const trialRes = await fetch("/api/trial-check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "check", fingerprint, email: form.email }),
-            });
-            const trialCheck = (await safeJson<{
-                allowed?: boolean;
-                reason?: string;
-            }>(trialRes)) ?? {};
-
-            if (!trialCheck.allowed) {
-                const msg = trialCheck.reason || "A free trial has already been used here.";
-                setError(msg);
-                toast.error("Free trial unavailable", { description: msg });
-                setLoading(false);
-                return;
-            }
-
-            // 2. Create the account.
+            // 1. Create the account.
             const { data: signUpData, error: signUpError } = await signUp.email({
                 email: form.email.trim().toLowerCase(),
                 password: form.password,
@@ -123,22 +103,7 @@ export default function RegisterPage() {
                 return;
             }
 
-            // 3. Record the trial claim against this device + IP.
-            const newUserId = (signUpData as { user?: { id?: string } } | null)?.user?.id;
-            if (newUserId) {
-                await fetch("/api/trial-check", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        action: "claim",
-                        userId: newUserId,
-                        email: form.email,
-                        fingerprint,
-                    }),
-                }).catch(() => {});
-            }
-
-            // 4. Move to OTP step. Better Auth has already sent the verification
+            // 2. Move to OTP step. Better Auth has already sent the verification
             //    code on signup (sendVerificationOnSignUp on the email-OTP plugin).
             setStep("otp");
             setResendCooldown(45);
@@ -216,25 +181,6 @@ export default function RegisterPage() {
         }
 
         try {
-            // Pre-check trial eligibility before redirecting to Google.
-            const fingerprint = await getDeviceFingerprint();
-            const trialRes = await fetch("/api/trial-check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "check", fingerprint }),
-            });
-            const trialCheck = (await safeJson<{
-                allowed?: boolean;
-                reason?: string;
-            }>(trialRes)) ?? {};
-
-            if (!trialCheck.allowed) {
-                const msg = trialCheck.reason || "A free trial has already been used here.";
-                setError(msg);
-                toast.error("Free trial unavailable", { description: msg });
-                return;
-            }
-
             await signIn.social({
                 provider: "google",
                 callbackURL: "/dashboard",
