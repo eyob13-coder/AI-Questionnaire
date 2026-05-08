@@ -46,6 +46,16 @@ export default function RegisterPage() {
     const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
+    const safeJson = async <T,>(res: Response): Promise<T | null> => {
+        const text = await res.text();
+        if (!text) return null;
+        try {
+            return JSON.parse(text) as T;
+        } catch {
+            return null;
+        }
+    };
+
     useEffect(() => {
         const updateOnlineState = () => {
             setIsOffline(!navigator.onLine);
@@ -82,11 +92,15 @@ export default function RegisterPage() {
         try {
             // 1. Trial fraud pre-check (device + network).
             const fingerprint = await getDeviceFingerprint();
-            const trialCheck = await fetch("/api/trial-check", {
+            const trialRes = await fetch("/api/trial-check", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "check", fingerprint, email: form.email }),
-            }).then((r) => r.json());
+            });
+            const trialCheck = (await safeJson<{
+                allowed?: boolean;
+                reason?: string;
+            }>(trialRes)) ?? {};
 
             if (!trialCheck.allowed) {
                 const msg = trialCheck.reason || "A free trial has already been used here.";
@@ -204,11 +218,15 @@ export default function RegisterPage() {
         try {
             // Pre-check trial eligibility before redirecting to Google.
             const fingerprint = await getDeviceFingerprint();
-            const trialCheck = await fetch("/api/trial-check", {
+            const trialRes = await fetch("/api/trial-check", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "check", fingerprint }),
-            }).then((r) => r.json());
+            });
+            const trialCheck = (await safeJson<{
+                allowed?: boolean;
+                reason?: string;
+            }>(trialRes)) ?? {};
 
             if (!trialCheck.allowed) {
                 const msg = trialCheck.reason || "A free trial has already been used here.";
