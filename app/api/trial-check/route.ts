@@ -77,32 +77,22 @@ export async function POST(req: NextRequest) {
   const prisma = getPrisma();
 
   if (body.action === "check") {
-    // Skip IP check for local/private addresses (dev / behind shared NAT).
-    const ipShouldCount = !isLocalIp(ip);
-
-    const conditions: Array<Record<string, string>> = [];
-    if (ipShouldCount) conditions.push({ ipHash });
-    if (fingerprintHash) conditions.push({ fingerprintHash });
-
-    if (conditions.length === 0) {
+    if (!fingerprintHash) {
       return NextResponse.json({ allowed: true });
     }
 
     const existing = await prisma.trialClaim.findFirst({
-      where: { OR: conditions },
+      where: { fingerprintHash },
       select: { id: true, ipHash: true, fingerprintHash: true, email: true },
     });
 
     if (existing) {
-      const matchedFingerprint =
-        fingerprintHash && existing.fingerprintHash === fingerprintHash;
-      const reason = matchedFingerprint
-        ? "It looks like you've already started a free trial on this device. Please sign in to your existing account."
-        : "A free trial has already been started from this network. Please sign in to your existing account.";
+      const reason =
+        "It looks like you've already started a free trial on this device. Please sign in to your existing account.";
       return NextResponse.json({
         allowed: false,
         reason,
-        matched: matchedFingerprint ? "device" : "network",
+        matched: "device",
       });
     }
 
