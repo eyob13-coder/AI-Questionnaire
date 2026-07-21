@@ -178,123 +178,89 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
       let vectorSearchAvailable = true;
       let quotaBlocked = false;
 
-      for (let i = 0; i < questionsText.length; i++) {
+      const CONCURRENCY = 1; // NVIDIA free tier will likely hang or rate limit if >1
+      for (let i = 0; i < questionsText.length; i += CONCURRENCY) {
         if (quotaBlocked) {
           break;
         }
 
-        const questionText = questionsText[i];
+        const batch = questionsText.slice(i, i + CONCURRENCY);
+        
+        await Promise.all(batch.map(async (questionText, batchIdx) => {
+          if (quotaBlocked) return;
+          const actualIndex = i + batchIdx;
 
-        try {
-          let contextTexts: string[] = [];
+          try {
+            let contextTexts: string[] = [];
 
-          // A. Prefer vector search, but degrade gracefully if embeddings fail.
-          if (vectorSearchAvailable) {
-            try {
-              const questionEmbedding =
-                await this.ragService.generateEmbedding(questionText);
-
-              const searchResults = await this.prisma.$queryRaw<
-                { content: string; document_id: string; similarity: number }[]
-              >`
-                SELECT 
-                    dc.content, 
-                    dc.document_id,
-                    1 - (dc.embedding <=> ${questionEmbedding}::vector) as similarity
-                FROM document_chunks dc
-                JOIN documents d ON d.id = dc.document_id
-                WHERE d.workspace_id = ${workspaceId}
-                  AND d.status = 'READY'
-                  AND dc.embedding IS NOT NULL
-                ORDER BY dc.embedding <=> ${questionEmbedding}::vector
-                LIMIT 5
-              `;
-
-              contextTexts = searchResults.map((r) => r.content);
-            } catch (embeddingError) {
-              vectorSearchAvailable = false;
-              this.logger.warn(
-                `Embedding unavailable for questionnaire ${questionnaireId}; switching to keyword fallback retrieval.`,
-              );
-              contextTexts = await this.findContextWithoutEmbeddings(
-                workspaceId,
-                questionText,
-              );
+            if (vectorSearchAvailable) {
+              try {
+                const questionEmbedding = await this.ragService.generateEmbedding(questionText);
+                const searchResults = await this.prisma.$queryRaw<
+                  { content: string; document_id: string; similarity: number }[]
+                >`
+                  SELECT 
+                      dc.content, 
+                      dc.document_id,
+                      1 - (dc.embedding <=> ${questionEmbedding}::vector) as similarity
+                  FROM document_chunks dc
+                  JOIN documents d ON d.id = dc.document_id
+                  WHERE d.workspace_id = ${workspaceId}
+                    AND d.status = 'READY'
+                    AND dc.embedding IS NOT NULL
+                  ORDER BY dc.embedding <=> ${questionEmbedding}::vector
+                  LIMIT 5
+                `;
+                contextTexts = searchResults.map((r) => r.content);
+              } catch (embeddingError) {
+                vectorSearchAvailable = false;
+                this.logger.warn(`Embedding unavailable for questionnaire ${questionnaireId}; switching to keyword fallback retrieval.`);
+                contextTexts = await this.findContextWithoutEmbeddings(workspaceId, questionText);
+              }
+            } else {
+              contextTexts = await this.findContextWithoutEmbeddings(workspaceId, questionText);
             }
-          } else {
-            contextTexts = await this.findContextWithoutEmbeddings(
-              workspaceId,
-              questionText,
-            );
-          }
 
-          // B. Generate answer using Gemini
-          const result = await this.ragService.generateAnswer(
-            questionText,
-            contextTexts,
-          );
-
-          // C. Upsert answer into pre-created row (or create if missing)
-          await this.saveAnswerForRow({
-            questionnaireId,
-            rowIndex: i,
-            questionText,
-            answerText: result.answer,
-            confidence: result.confidence,
-            status: result.confidence > 85 ? 'APPROVED' : 'REVIEW',
-          });
-
-          answeredCount++;
-        } catch (questionError) {
-          if (questionError instanceof AiQuotaExceededError) {
-            const quotaMessage = this.quotaDraftMessage(
-              questionError.retryAfterSeconds,
-            );
-
-            this.logger.warn(
-              `AI quota exceeded for questionnaire ${questionnaireId}; stopping remaining generation.`,
-            );
+            const result = await this.ragService.generateAnswer(questionText, contextTexts);
 
             await this.saveAnswerForRow({
               questionnaireId,
-              rowIndex: i,
+              rowIndex: actualIndex,
               questionText,
-              answerText: quotaMessage,
-              confidence: null,
-              status: 'DRAFT',
+              answerText: result.answer,
+              confidence: result.confidence,
+              status: result.confidence > 85 ? 'APPROVED' : 'REVIEW',
             });
 
-            for (let j = i + 1; j < questionsText.length; j++) {
+            answeredCount++;
+          } catch (questionError) {
+            if (questionError instanceof AiQuotaExceededError) {
+              quotaBlocked = true;
+              const quotaMessage = this.quotaDraftMessage(questionError.retryAfterSeconds);
+              this.logger.warn(`AI quota exceeded for questionnaire ${questionnaireId}; stopping remaining generation.`);
+              
               await this.saveAnswerForRow({
                 questionnaireId,
-                rowIndex: j,
-                questionText: questionsText[j],
+                rowIndex: actualIndex,
+                questionText,
                 answerText: quotaMessage,
                 confidence: null,
                 status: 'DRAFT',
               });
+            } else {
+              this.logger.warn(`Error generating answer for question [${actualIndex}]`, questionError as Error);
+              await this.saveAnswerForRow({
+                questionnaireId,
+                rowIndex: actualIndex,
+                questionText,
+                answerText: null,
+                confidence: null,
+                status: 'DRAFT',
+              });
             }
-
-            quotaBlocked = true;
-          } else {
-            this.logger.warn(
-              `Question ${i + 1}/${questionsText.length} failed for questionnaire ${questionnaireId}`,
-            );
-
-            // Preserve the question row even if generation failed for this item.
-            await this.saveAnswerForRow({
-              questionnaireId,
-              rowIndex: i,
-              questionText,
-              answerText:
-                'AI could not generate an answer for this question yet. Please review manually and retry later.',
-              confidence: null,
-              status: 'DRAFT',
-            });
           }
-        }
+        }));
 
-        // E. Update progress by processed row count to keep UI moving.
         await this.prisma.questionnaire.update({
           where: { id: questionnaireId },
           data: { answeredCount },

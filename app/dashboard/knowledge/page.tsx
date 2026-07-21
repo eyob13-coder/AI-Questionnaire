@@ -29,6 +29,7 @@ import {
   PageError,
   PageLoading,
 } from "@/components/dashboard/workspace-state";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 interface KnowledgeDoc {
   id: string;
@@ -59,6 +60,7 @@ function KnowledgeContent({
   const [search, setSearch] = useState(initialSearch);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocs = useCallback(
@@ -124,8 +126,14 @@ function KnowledgeContent({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this document? This cannot be undone.")) return;
+  const handleDelete = (id: string) => {
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
 
     try {
       await apiDelete(`/workspaces/${workspaceId}/knowledge/${id}`);
@@ -311,6 +319,16 @@ function KnowledgeContent({
           })
         )}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Document"
+        message="This document and all its indexed chunks will be permanently deleted. This action cannot be undone."
+        confirmLabel="Delete Document"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

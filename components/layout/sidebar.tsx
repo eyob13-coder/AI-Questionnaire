@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -15,9 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import { useSession } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/auth-client";
 
 const mainNav = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", hoverClass: "group-hover:scale-110" },
@@ -35,6 +36,7 @@ const bottomNav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const { data: sessionData } = useSession();
 
@@ -61,7 +63,7 @@ export default function Sidebar() {
       `}
     >
       {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0 group overflow-hidden">
+      <Link href="/" className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0 group overflow-hidden">
         <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
           <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
         </div>
@@ -161,6 +163,20 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={async () => {
+            localStorage.removeItem("vaultix.activeWorkspaceId");
+            await signOut();
+            router.push("/");
+          }}
+          className={`mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-light-3 hover:text-red-400 hover:bg-red-500/10 transition-all group ${collapsed ? "justify-center" : ""}`}
+          title={collapsed ? "Log Out" : undefined}
+        >
+          <LogOut className="w-[18px] h-[18px] shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
+          {!collapsed && <span>Log Out</span>}
+        </button>
 
         {/* Collapse toggle */}
         <button

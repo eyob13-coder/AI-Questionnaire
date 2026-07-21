@@ -13,26 +13,44 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
 
   constructor(private readonly configService: ConfigService) {
-    this.client = new Redis({
-      host: this.configService.get<string>('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      password: this.configService.get<string>('REDIS_PASSWORD', ''),
-      maxRetriesPerRequest: null, // Required by BullMQ
-      retryStrategy: (times: number) => {
-        if (times > 10) {
-          this.logger.error('Redis max retries exceeded');
-          return null;
-        }
-        return Math.min(times * 200, 5000);
-      },
-    });
+    const isDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
+    
+    if (!isDisabled) {
+      this.client = new Redis({
+        host: this.configService.get<string>('REDIS_HOST', 'localhost'),
+        port: this.configService.get<number>('REDIS_PORT', 6379),
+        password: this.configService.get<string>('REDIS_PASSWORD', ''),
+        maxRetriesPerRequest: null, // Required by BullMQ
+        retryStrategy: (times: number) => {
+          if (times > 10) {
+            this.logger.error('Redis max retries exceeded');
+            return null;
+          }
+          return Math.min(times * 200, 5000);
+        },
+      });
 
-    this.client.on('error', (err) => {
-      this.logger.error(`Redis connection error: ${err.message}`);
-    });
+      this.client.on('error', (err) => {
+        this.logger.error(`Redis connection error: ${err.message}`);
+      });
+    } else {
+      // Create a mock client that does nothing when disabled
+      this.client = null as any;
+    }
   }
 
   async onModuleInit() {
+    const isDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
+    if (isDisabled) {
+      this.logger.log('⚠️  Redis disabled — falling back to DB-only mode');
+      return;
+    }
+
+    if (!this.client) {
+      this.logger.log('⚠️  Redis client not initialized — falling back to DB-only mode');
+      return;
+    }
+
     try {
       await this.client.ping();
       this.logger.log('✅ Redis connected successfully');
@@ -44,7 +62,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.client.quit();
+    if (this.client) {
+      await this.client.quit();
+    }
   }
 
   /** Get the raw ioredis client (needed by BullMQ) */

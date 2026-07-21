@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
     Eye, EyeOff, ArrowRight, Lock, Mail, User, Building2,
@@ -36,6 +37,7 @@ export default function RegisterPage() {
     const [otpLoading, setOtpLoading] = useState(false);
     const [otpError, setOtpError] = useState("");
     const [resendCooldown, setResendCooldown] = useState(0);
+    const router = useRouter();
 
     useEffect(() => {
         if (resendCooldown <= 0) return;
@@ -142,8 +144,9 @@ export default function RegisterPage() {
                 return;
             }
 
-            toast.success("Email verified", { description: "Your workspace is ready." });
+            toast.success("Email verified", { description: "Redirecting to your dashboard…" });
             setStep("success");
+            router.replace("/dashboard");
         } catch (err) {
             setOtpError(formatAuthError(err, "Couldn't verify the code right now."));
         } finally {
@@ -181,11 +184,16 @@ export default function RegisterPage() {
         }
 
         try {
-            await signIn.social({
+            const { data, error } = await signIn.social({
                 provider: "google",
                 callbackURL: "/dashboard",
             });
+            if (error) {
+                console.error("Google sign up error:", error);
+                setError(error.message || "Google sign-up is unavailable right now.");
+            }
         } catch (err) {
+            console.error("Unexpected error during Google sign up:", err);
             setError(formatAuthError(err, "Google sign-up is unavailable right now."));
         }
     };

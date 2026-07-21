@@ -19,6 +19,7 @@ import {
   PageError,
   PageLoading,
 } from "@/components/dashboard/workspace-state";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Questionnaire {
   id: string;
@@ -48,15 +49,19 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: string, name: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (!window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-      return;
-    }
-    
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
+
     setDeletingId(id);
     try {
       await apiDelete(`/workspaces/${workspaceId}/questionnaires/${id}`);
@@ -197,7 +202,7 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
               </span>
               <div className="flex justify-end">
                 <button
-                  onClick={(e) => handleDelete(e, q.id, q.name)}
+                  onClick={(e) => handleDeleteClick(e, q.id, q.name)}
                   disabled={deletingId === q.id}
                   className="p-1.5 text-light-4 hover:text-danger hover:bg-danger/10 rounded-md transition-colors"
                   title="Delete questionnaire"
@@ -213,6 +218,16 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
           );
         })}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Questionnaire"
+        message={deleteTarget ? `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and all generated answers will be lost.` : ""}
+        confirmLabel="Delete Questionnaire"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

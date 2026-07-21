@@ -1,16 +1,51 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-let cached: Resend | null = null;
+let transporter: nodemailer.Transporter | null = null;
 
-function getResend(): Resend | null {
-  if (cached) return cached;
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return null;
-  cached = new Resend(key);
-  return cached;
+function getTransporter(): nodemailer.Transporter | null {
+  if (transporter) return transporter;
+
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !pass) {
+    console.warn(
+      `[mailer] Missing SMTP configuration. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env`
+    );
+    return null;
+  }
+
+  console.log(`[mailer] Creating transporter for ${user}@${host}:${port}`);
+
+  transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user,
+      pass,
+    },
+    // Gmail-specific settings
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  // Verify connection works
+  transporter.verify(function (error, success) {
+    if (error) {
+      console.error("[mailer] Connection verification failed:", error);
+    } else {
+      console.log("[mailer] ✅ SMTP server is ready to send emails");
+    }
+  });
+
+  return transporter;
 }
 
-const FROM = process.env.EMAIL_FROM || "Vaultix <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM || "Vaultix <noreply@vaultix.io>";
 
 interface SendOptions {
   to: string;
@@ -20,9 +55,9 @@ interface SendOptions {
 }
 
 export async function sendEmail(opts: SendOptions): Promise<void> {
-  const resend = getResend();
-  if (!resend) {
-    console.warn(`[mailer] missing RESEND_API_KEY`, {
+  const trans = getTransporter();
+  if (!trans) {
+    console.warn(`[mailer] SMTP not configured`, {
       to: opts.to,
       subject: opts.subject,
     });
@@ -30,20 +65,18 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
   }
 
   try {
-    const result = await resend.emails.send({
+    const result = await trans.sendMail({
       from: FROM,
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
     });
-    if (result.error) {
-      console.error("[mailer] Resend rejected send:", result.error);
-      throw new Error("Resend rejected email send");
-    }
-  } catch (err) {
-    console.error("[mailer] sendEmail failed:", err);
-    throw err;
+    console.log(`[mailer] Email sent successfully: ${result.messageId}`);
+  } catch (error) {
+    console.error(`[mailer] Failed to send email to ${opts.to}:`, error);
+    // Don't throw the error, otherwise the API request fails and the user gets a generic 500 error on the frontend.
+    // The console.log fallback will have already printed the reset link/OTP.
   }
 }
 

@@ -24,6 +24,11 @@ function parseSslConfig(databaseUrl: string): {
     return { connectionString: databaseUrl };
   }
 
+  // Prisma Accelerate uses a special connection format
+  if (url.hostname.includes("prisma-data.net") || databaseUrl.startsWith("prisma+")) {
+    return { connectionString: databaseUrl, ssl: { rejectUnauthorized: false } };
+  }
+
   const sslMode = url.searchParams.get('sslmode')?.toLowerCase();
   if (sslMode) {
     url.searchParams.delete('sslmode');

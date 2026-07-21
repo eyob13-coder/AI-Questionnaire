@@ -7,6 +7,7 @@ import { QuestionnairesController } from './questionnaires.controller';
 import { RagModule } from '../rag/rag.module';
 import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
 import { AuditModule } from '../audit/audit.module';
+import { QueueModule } from '../queue/queue.module';
 
 import { BillingModule } from '../billing/billing.module';
 
@@ -19,6 +20,7 @@ import { BillingModule } from '../billing/billing.module';
       storage: memoryStorage(),
     }),
     BullModule.registerQueue({ name: QUESTIONNAIRE_GENERATION_QUEUE }),
+    QueueModule,
   ],
   providers: [QuestionnairesService],
   controllers: [QuestionnairesController],

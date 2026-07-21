@@ -101,11 +101,16 @@ export default function LoginPage() {
         }
 
         try {
-            await signIn.social({
+            const { data, error } = await signIn.social({
                 provider: "google",
                 callbackURL,
             });
+            if (error) {
+                console.error("Google sign in error:", error);
+                setError(error.message || "Google sign-in is unavailable right now.");
+            }
         } catch (err) {
+            console.error("Unexpected error during Google sign in:", err);
             setError(formatAuthError(err, "Google sign-in is unavailable right now."));
         }
     };

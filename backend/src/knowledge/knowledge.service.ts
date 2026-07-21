@@ -12,6 +12,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
 import type { DocumentProcessingJobData } from '../queue/processors/document-processing.processor';
 import { BillingService } from '../billing/billing.service';
+import { RagService } from '../rag/rag.service';
+import { PDFParse } from 'pdf-parse';
+import * as mammoth from 'mammoth';
 
 const RECONCILE_INTERVAL_MS = 60_000;
 const STUCK_THRESHOLD_MS = 15 * 60_000;
@@ -26,6 +29,7 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
     @InjectQueue(DOCUMENT_PROCESSING_QUEUE)
     private readonly documentQueue: Queue<DocumentProcessingJobData>,
     private readonly billing: BillingService,
+    private readonly ragService: RagService,
   ) { }
 
   async onModuleInit() {
@@ -96,7 +100,7 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Upload a document and enqueue it for async processing via BullMQ.
-   * Returns immediately with the document record in PROCESSING status.
+   * Falls back to synchronous inline processing when Redis/BullMQ is unavailable.
    */
   async processAndUploadDocument(
     workspaceId: string,
@@ -130,29 +134,146 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    // 2. Enqueue for async processing
-    await this.documentQueue.add(
-      'process-document',
-      {
-        documentId: document.id,
-        workspaceId,
-        fileName: file.originalname,
-        fileType: file.mimetype,
-        fileBuffer: file.buffer.toString('base64'),
-      },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: { count: 100 },
-        removeOnFail: { count: 500 },
-      },
-    );
+    // 2. Try to enqueue for async processing via BullMQ
+    let enqueued = false;
+    try {
+      await this.documentQueue.add(
+        'process-document',
+        {
+          documentId: document.id,
+          workspaceId,
+          fileName: file.originalname,
+          fileType: file.mimetype,
+          fileBuffer: file.buffer.toString('base64'),
+        },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: { count: 100 },
+          removeOnFail: { count: 500 },
+        },
+      );
+      enqueued = true;
+      this.logger.log(
+        `📄 Document ${document.id} enqueued for processing`,
+      );
+    } catch (queueError) {
+      this.logger.warn(
+        `⚠️  Redis/BullMQ unavailable — processing document ${document.id} synchronously`,
+      );
+    }
 
-    this.logger.log(
-      `📄 Document ${document.id} enqueued for processing`,
-    );
+    // 3. Fallback: process inline when queue is unavailable
+    if (!enqueued) {
+      try {
+        await this.processDocumentInline(document.id, file);
+      } catch (inlineError) {
+        this.logger.error(
+          `❌ Inline processing failed for document ${document.id}`,
+          inlineError as Error,
+        );
+        await this.prisma.document.update({
+          where: { id: document.id },
+          data: { status: 'FAILED' },
+        });
+      }
+    }
 
     return document;
+  }
+
+  /**
+   * Processes a document synchronously (same logic as the BullMQ worker).
+   * Used as a fallback when Redis is unavailable.
+   */
+  private async processDocumentInline(
+    documentId: string,
+    file: Express.Multer.File,
+  ) {
+    const buffer = file.buffer;
+
+    // 1. Extract text
+    let extractedText = '';
+    if (file.mimetype === 'application/pdf') {
+      const parser = new PDFParse({ data: buffer });
+      const data = await parser.getText();
+      extractedText = data.text;
+      await parser.destroy();
+    } else if (
+      file.mimetype ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      const result = (await mammoth.extractRawText({ buffer })) as {
+        value: string;
+      };
+      extractedText = result.value;
+    } else if (file.mimetype === 'text/plain') {
+      extractedText = buffer.toString('utf-8');
+    }
+
+    // 2. Chunk text
+    const chunks = this.chunkText(extractedText, 1000);
+
+    // 3. Generate embeddings and save chunks
+    let embeddingAvailable = true;
+
+    for (let i = 0; i < chunks.length; i++) {
+      const textChunk = chunks[i];
+      if (!textChunk.trim()) continue;
+
+      let embeddingVector: number[] | null = null;
+
+      if (embeddingAvailable) {
+        try {
+          embeddingVector =
+            await this.ragService.generateEmbedding(textChunk);
+        } catch {
+          embeddingAvailable = false;
+          this.logger.warn(
+            `Embedding generation unavailable for document ${documentId}; storing chunks without vectors.`,
+          );
+        }
+      }
+
+      if (embeddingVector) {
+        const vectorString = `[${embeddingVector.join(',')}]`;
+        await this.prisma.$executeRaw`
+          INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at, embedding)
+          VALUES (
+            gen_random_uuid(), 
+            ${textChunk}, 
+            ${i}, 
+            ${documentId}, 
+            NOW(), 
+            ${vectorString}::vector
+          )
+        `;
+      } else {
+        await this.prisma.$executeRaw`
+          INSERT INTO document_chunks (id, content, chunk_index, document_id, created_at)
+          VALUES (
+            gen_random_uuid(), 
+            ${textChunk}, 
+            ${i}, 
+            ${documentId}, 
+            NOW()
+          )
+        `;
+      }
+    }
+
+    // 4. Mark as ready
+    await this.prisma.document.update({
+      where: { id: documentId },
+      data: { status: 'READY' },
+    });
+
+    this.logger.log(`✅ Document ${documentId} processed synchronously`);
+  }
+
+  private chunkText(text: string, chunkSize: number): string[] {
+    const regex = new RegExp(`.{1,${chunkSize}}(\\s|$)|.{1,${chunkSize}}`, 'g');
+    return text.match(regex) || [];
   }
 
   async listDocuments(workspaceId: string) {

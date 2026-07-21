@@ -33,25 +33,27 @@ export class RagService {
 
   constructor(private configService: ConfigService) {
     const apiKey =
+      this.configService.get<string>('NVIDIA_API_KEY') ||
       this.configService.get<string>('AI_INTEGRATIONS_OPENAI_API_KEY') ||
       this.configService.get<string>('OPENAI_API_KEY');
-    const baseURL = this.configService.get<string>(
-      'AI_INTEGRATIONS_OPENAI_BASE_URL',
-    );
+    const baseURL =
+      this.configService.get<string>('NVIDIA_BASE_URL') ||
+      'https://integrate.api.nvidia.com/v1';
 
     if (!apiKey || !baseURL) {
       this.logger.warn(
-        'Replit AI Integrations env vars (AI_INTEGRATIONS_OPENAI_API_KEY / AI_INTEGRATIONS_OPENAI_BASE_URL) are not set. AI features will fail.',
+        'NVIDIA AI env vars (NVIDIA_API_KEY / NVIDIA_BASE_URL) are not set. AI features will fail.',
       );
     }
 
     this.openai = new OpenAI({
       apiKey: apiKey || 'unconfigured',
-      baseURL: baseURL || undefined,
+      baseURL,
     });
 
     this.completionModel =
-      this.configService.get<string>('OPENAI_COMPLETION_MODEL') || 'gpt-5.4';
+      this.configService.get<string>('OPENAI_COMPLETION_MODEL') ||
+      'z-ai/glm-5.2';
 
     const rawEmbeddingDimensions =
       this.configService.get<string>('EMBEDDING_DIMENSIONS') || '768';
@@ -79,11 +81,11 @@ export class RagService {
   }
 
   /**
-   * Replit AI Integrations does not expose an embeddings endpoint, so for the
-   * MVP we generate a deterministic pseudo-embedding from a SHA-256 hash of
-   * the text. Identical text always produces an identical vector, which means
-   * RAG can still detect exact / near-duplicate questions, but semantic
-   * retrieval quality will be much lower than a real embedding model.
+   * NVIDIA's free tier does not expose an embeddings endpoint, so for the MVP
+   * we generate a deterministic pseudo-embedding from a SHA-256 hash of the
+   * text. Identical text always produces an identical vector, which means RAG
+   * can still detect exact / near-duplicate questions, but semantic retrieval
+   * quality will be much lower than a real embedding model.
    *
    * Swap this out for a proper embeddings provider before going to production.
    */
@@ -111,7 +113,7 @@ export class RagService {
 
   /**
    * Drafts an answer based on a given question and an array of context
-   * snippets. Uses Replit AI Integrations (OpenAI-compatible).
+   * snippets. Uses NVIDIA AI via the OpenAI-compatible endpoint.
    */
   async generateAnswer(question: string, contextTexts: string[]) {
     const combinedContext = contextTexts.filter(Boolean).join('\n\n---\n\n');
@@ -133,10 +135,14 @@ export class RagService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_completion_tokens: 8192,
-      });
+        temperature: 1,
+        top_p: 1,
+        max_tokens: 4096,
+        seed: 42,
+      }, { timeout: 30000 });
 
       const answer = result.choices[0]?.message?.content?.trim() || '';
+
       if (!answer) {
         throw new Error('AI response did not include any text.');
       }

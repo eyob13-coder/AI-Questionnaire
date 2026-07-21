@@ -12,6 +12,7 @@ import {
   PageError,
   PageLoading,
 } from "@/components/dashboard/workspace-state";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 type Role = "OWNER" | "EDITOR" | "VIEWER";
 
@@ -45,8 +46,9 @@ function TeamContent({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<Role>("EDITOR");
+  const [inviteRole, setInviteRole] = useState<Role>("VIEWER");
   const [inviting, setInviting] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch);
 
   const fetchMembers = useCallback(
@@ -119,8 +121,14 @@ function TeamContent({
     }
   };
 
-  const handleRemove = async (memberId: string) => {
-    if (!confirm("Remove this member from the workspace?")) return;
+  const handleRemove = (memberId: string) => {
+    setRemoveTarget(memberId);
+  };
+
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    const memberId = removeTarget;
+    setRemoveTarget(null);
 
     try {
       await apiDelete(`/workspaces/${workspaceId}/members/${memberId}`);
@@ -268,6 +276,16 @@ function TeamContent({
           })
         )}
       </div>
+
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Remove Team Member"
+        message="Are you sure you want to remove this member from the workspace? They will lose access to all questionnaires and documents."
+        confirmLabel="Remove Member"
+        variant="danger"
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }

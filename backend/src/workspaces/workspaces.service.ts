@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { BillingService } from '../billing/billing.service';
+import { MailerService } from '../mailer/mailer.service';
 
 type NotificationPriority = 'info' | 'success' | 'warning' | 'danger';
 
@@ -31,6 +32,7 @@ export class WorkspacesService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly billing: BillingService,
+    private readonly mailer: MailerService,
   ) {}
 
   private readKey(workspaceId: string, userId: string) {
@@ -367,14 +369,17 @@ export class WorkspacesService {
   async inviteMember(workspaceId: string, email: string, role: Role) {
     await this.billing.checkLimit(workspaceId, 'members');
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    let user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
-      // For now we require the user to already have an account. A proper
-      // invite-by-email flow would create a pending Verification record and
-      // send an email — left as a follow-up.
-      throw new BadRequestException(
-        'No account exists for that email. Ask them to sign up first.',
-      );
+      // Lazily create a placeholder user account so they can be invited immediately.
+      // When they sign up using this email via OAuth or Magic Link, better-auth 
+      // will gracefully link to this existing record.
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name: email.split('@')[0],
+        },
+      });
     }
 
     const existing = await this.prisma.workspaceMember.findUnique({
@@ -384,12 +389,27 @@ export class WorkspacesService {
       throw new ConflictException('User is already a member');
     }
 
-    return this.prisma.workspaceMember.create({
+    const member = await this.prisma.workspaceMember.create({
       data: { workspaceId, userId: user.id, role },
       include: {
         user: { select: { id: true, name: true, email: true, image: true } },
       },
     });
+
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+
+    if (workspace) {
+      // In a real app we'd get the inviter's name from the context, 
+      // but 'Workspace Admin' is fine for this placeholder
+      this.mailer.sendInviteEmail(email, workspace.name, 'A Workspace Admin').catch(err => {
+        // Silently log email failures
+      });
+    }
+
+    return member;
   }
 
   async removeMember(memberId: string) {

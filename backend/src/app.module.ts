@@ -1,6 +1,6 @@
 // Trigger restart for auth fixes
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { QueueModule } from './queue/queue.module';
@@ -14,6 +14,12 @@ import { AuditModule } from './audit/audit.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { BillingModule } from './billing/billing.module';
 import { ResourcesModule } from './resources/resources.module';
+import { MailerModule } from './mailer/mailer.module';
+
+const getQueueModuleImports = () => {
+  // For now, always include QueueModule but it won't connect if Redis is disabled
+  return [QueueModule];
+};
 
 @Module({
   imports: [
@@ -23,7 +29,7 @@ import { ResourcesModule } from './resources/resources.module';
     }),
     PrismaModule,
     RedisModule,
-    QueueModule,
+    ...getQueueModuleImports(),
     AuthModule,
     UsersModule,
     WorkspacesModule,
@@ -34,6 +40,7 @@ import { ResourcesModule } from './resources/resources.module';
     DashboardModule,
     BillingModule,
     ResourcesModule,
+    MailerModule,
   ],
 })
 export class AppModule { }

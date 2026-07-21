@@ -25,6 +25,11 @@ function parseSslConfig(databaseUrl: string): {
     return { connectionString: databaseUrl };
   }
 
+  // Prisma Accelerate uses a special connection format
+  if (url.hostname.includes("prisma-data.net") || databaseUrl.startsWith("prisma+")) {
+    return { connectionString: databaseUrl, ssl: { rejectUnauthorized: false } };
+  }
+
   const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
   if (sslMode) {
     url.searchParams.delete("sslmode");
@@ -93,6 +98,15 @@ const { prisma } = authDbClients;
 
 if (process.env.NODE_ENV !== "production") {
   globalForAuthDb.__vaultixAuthDb = authDbClients;
+  
+  // Debug logging
+  console.log("[auth] ===== AUTH CONFIG =====");
+  console.log("[auth] GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+  console.log("[auth] GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "✅ set" : "❌ missing");
+  console.log("[auth] BETTER_AUTH_URL:", process.env.BETTER_AUTH_URL);
+  console.log("[auth] REDIRECT_URL:", process.env.BETTER_AUTH_URL + "/api/auth/callback/google");
+  console.log("[auth] DATABASE_URL:", process.env.DATABASE_URL ? "✅ set" : "❌ missing");
+  console.log("[auth] ========================");
 }
 
 const trustedOrigins = Array.from(
@@ -125,6 +139,12 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       const tpl = passwordResetEmailTemplate(url);
+      
+      console.log(`\n=========================================`);
+      console.log(`[auth] Password Reset Link for ${user.email}:`);
+      console.log(url);
+      console.log(`=========================================\n`);
+      
       await sendEmail({
         to: user.email,
         subject: tpl.subject,
@@ -160,7 +180,12 @@ export const auth = betterAuth({
       sendVerificationOnSignUp: true,
       sendVerificationOTP: async ({ email, otp, type }) => {
         const tpl = otpEmailTemplate(otp, type);
-        console.log("[auth] sending otp", { email, type });
+        
+        // Log the OTP explicitly so the user can test locally without SMTP setup!
+        console.log(`\n=========================================`);
+        console.log(`[auth] OTP for ${email}: ${otp}`);
+        console.log(`=========================================\n`);
+        
         await sendEmail({
           to: email,
           subject: tpl.subject,
@@ -173,6 +198,17 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       secure: process.env.NODE_ENV === "production",
+    },
+    logger: {
+      error: (err: any) => {
+        console.error("[Better Auth] ERROR:", err);
+      },
+      warn: (msg: any) => {
+        console.warn("[Better Auth] WARN:", msg);
+      },
+      debug: (msg: any) => {
+        console.log("[Better Auth] DEBUG:", msg);
+      },
     },
   },
 });

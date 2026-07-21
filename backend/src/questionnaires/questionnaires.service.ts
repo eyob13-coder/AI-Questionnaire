@@ -6,13 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Queue, Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
 import type { QuestionnaireGenerationJobData } from '../queue/processors/questionnaire-generation.processor';
 import * as xlsx from 'xlsx';
 import { AuditService } from '../audit/audit.service';
 import { BillingService } from '../billing/billing.service';
+import { QuestionnaireGenerationProcessor } from '../queue/processors/questionnaire-generation.processor';
 
 type ExportFormat = 'xlsx' | 'csv';
 
@@ -33,6 +34,7 @@ export class QuestionnairesService {
     private readonly generationQueue: Queue<QuestionnaireGenerationJobData>,
     private readonly auditService: AuditService,
     private readonly billing: BillingService,
+    private readonly generationProcessor: QuestionnaireGenerationProcessor,
   ) {}
 
   private normalizeExportFormat(format?: string): ExportFormat {
@@ -197,7 +199,8 @@ export class QuestionnairesService {
       throw error;
     }
 
-    // 3. Enqueue async answer generation via BullMQ
+    // 4. Enqueue async answer generation via BullMQ
+    let enqueued = false;
     try {
       await this.generationQueue.add(
         'generate-answers',
@@ -213,24 +216,29 @@ export class QuestionnairesService {
           removeOnFail: { count: 200 },
         },
       );
+      enqueued = true;
     } catch (error) {
-      if (questionnaireId) {
-        await this.prisma.questionnaire
-          .delete({
-            where: { id: questionnaireId },
-          })
-          .catch(() => undefined);
-      }
-
-      if (this.isInfraError(error)) {
-        throw new ServiceUnavailableException(
-          'Processing is temporarily unavailable. Please retry in a moment.',
-        );
-      }
-
-      throw new ServiceUnavailableException(
-        'We received the file, but could not start processing. Please retry in a moment.',
+      this.logger.warn(
+        `⚠️  Redis/BullMQ unavailable — processing questionnaire ${questionnaireId} inline`,
       );
+    }
+
+    if (!enqueued && questionnaireId) {
+      // Fallback: process inline when queue is unavailable. 
+      // We don't await this so the HTTP response returns immediately.
+      const mockJob = {
+        id: `inline-${Date.now()}`,
+        data: {
+          questionnaireId: questionnaire.id,
+          workspaceId,
+          questionsText,
+        },
+        updateProgress: async () => undefined,
+      } as unknown as Job<QuestionnaireGenerationJobData>;
+
+      this.generationProcessor.process(mockJob).catch((e) => {
+        this.logger.error(`❌ Inline questionnaire generation failed`, e);
+      });
     }
 
     this.logger.log(
