@@ -130,6 +130,7 @@ const trustedOrigins = Array.from(
 );
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET || "fallback_secret_for_build",
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
