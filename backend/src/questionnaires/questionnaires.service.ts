@@ -202,7 +202,7 @@ export class QuestionnairesService {
     // 4. Enqueue async answer generation via BullMQ
     let enqueued = false;
     try {
-      await this.generationQueue.add(
+      const enqueuePromise = this.generationQueue.add(
         'generate-answers',
         {
           questionnaireId: questionnaire.id,
@@ -216,6 +216,13 @@ export class QuestionnairesService {
           removeOnFail: { count: 200 },
         },
       );
+
+      // Timeout after 3 seconds if Redis is connecting indefinitely
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Queue add timeout')), 3000),
+      );
+
+      await Promise.race([enqueuePromise, timeoutPromise]);
       enqueued = true;
     } catch (error) {
       this.logger.warn(

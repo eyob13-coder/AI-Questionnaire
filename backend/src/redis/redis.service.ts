@@ -16,19 +16,29 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const isDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
     
     if (!isDisabled) {
-      this.client = new Redis({
-        host: this.configService.get<string>('REDIS_HOST', 'localhost'),
-        port: this.configService.get<number>('REDIS_PORT', 6379),
-        password: this.configService.get<string>('REDIS_PASSWORD', ''),
-        maxRetriesPerRequest: null, // Required by BullMQ
-        retryStrategy: (times: number) => {
-          if (times > 10) {
-            this.logger.error('Redis max retries exceeded');
-            return null;
-          }
-          return Math.min(times * 200, 5000);
-        },
-      });
+      const redisUrl = this.configService.get<string>('REDIS_URL');
+      if (redisUrl) {
+        this.client = new Redis(redisUrl, {
+          maxRetriesPerRequest: null,
+          enableOfflineQueue: false,
+          retryStrategy: (times: number) => {
+            if (times > 5) return null;
+            return Math.min(times * 200, 2000);
+          },
+        });
+      } else {
+        this.client = new Redis({
+          host: this.configService.get<string>('REDIS_HOST', 'localhost'),
+          port: this.configService.get<number>('REDIS_PORT', 6379),
+          password: this.configService.get<string>('REDIS_PASSWORD', ''),
+          maxRetriesPerRequest: null, // Required by BullMQ
+          enableOfflineQueue: false,
+          retryStrategy: (times: number) => {
+            if (times > 5) return null;
+            return Math.min(times * 200, 2000);
+          },
+        });
+      }
 
       this.client.on('error', (err) => {
         this.logger.error(`Redis connection error: ${err.message}`);

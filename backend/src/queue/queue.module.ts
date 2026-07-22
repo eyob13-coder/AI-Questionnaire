@@ -21,11 +21,34 @@ const logger = new Logger('QueueModule');
           logger.warn('Redis is disabled - BullMQ job queues will not work');
         }
 
-        return {
-          connection: {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        let connectionConfig: Record<string, any>;
+
+        if (redisUrl) {
+          try {
+            const parsed = new URL(redisUrl);
+            connectionConfig = {
+              host: parsed.hostname,
+              port: Number.parseInt(parsed.port || '6379', 10),
+              password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+              username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
+              tls: parsed.protocol === 'rediss:' ? {} : undefined,
+            };
+          } catch {
+            connectionConfig = { host: 'localhost', port: 6379 };
+          }
+        } else {
+          connectionConfig = {
             host: configService.get<string>('REDIS_HOST', 'localhost'),
             port: configService.get<number>('REDIS_PORT', 6379),
             password: configService.get<string>('REDIS_PASSWORD', '') || undefined,
+          };
+        }
+
+        return {
+          connection: {
+            ...connectionConfig,
+            enableOfflineQueue: false,
             maxRetriesPerRequest: null,
             // Aggressive retry backoff to fail fast if Redis is down
             retryStrategy: (times: number) => {

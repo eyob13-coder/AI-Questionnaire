@@ -129,17 +129,23 @@ export class RagService {
       : `QUESTION:\n${question}\n\n(No retrieved context was provided.)`;
 
     try {
-      const result = await this.openai.chat.completions.create({
+      const completionConfig: any = {
         model: this.completionModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 1,
-        top_p: 1,
-        max_tokens: 4096,
+        top_p: 0.95,
+        max_tokens: 16384,
         seed: 42,
-      }, { timeout: 30000 });
+      };
+
+      if (this.completionModel.includes('deepseek')) {
+        completionConfig.chat_template_kwargs = { thinking: false };
+      }
+
+      const result = await this.openai.chat.completions.create(completionConfig, { timeout: 30000 });
 
       const answer = result.choices[0]?.message?.content?.trim() || '';
 
