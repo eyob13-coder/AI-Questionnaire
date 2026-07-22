@@ -48,8 +48,19 @@ export class JwtAuthGuard implements CanActivate {
 
   private normalizeSessionToken(rawToken: string | undefined): string | undefined {
     if (!rawToken) return undefined;
-    const trimmed = rawToken.trim();
+    let trimmed = rawToken.trim();
     if (!trimmed) return undefined;
+
+    try {
+      trimmed = decodeURIComponent(trimmed);
+    } catch {
+      // ignore
+    }
+
+    if (trimmed.startsWith('s:')) {
+      trimmed = trimmed.slice(2);
+    }
+
     const dotIndex = trimmed.indexOf('.');
     return dotIndex > 0 ? trimmed.slice(0, dotIndex) : trimmed;
   }
@@ -70,7 +81,10 @@ export class JwtAuthGuard implements CanActivate {
       token = cookies?.['better-auth.session_token'] || 
               cookies?.['better-auth.session-token'] || 
               cookies?.['better_auth_session_token'] ||
-              cookies?.['__Secure-better-auth.session_token'];
+              cookies?.['__Secure-better-auth.session_token'] ||
+              cookies?.['__Host-better-auth.session_token'] ||
+              cookies?.['__Secure-better-auth.session-token'] ||
+              cookies?.['__Host-better-auth.session-token'];
     }
 
     token = this.normalizeSessionToken(token);
