@@ -24,6 +24,8 @@ async function getArticle(slug: string): Promise<ResourceArticle | null> {
     }
 }
 
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
+
 export async function generateMetadata({
     params,
 }: {
@@ -32,9 +34,27 @@ export async function generateMetadata({
     const { slug } = await params;
     const article = await getArticle(slug);
     if (!article) return { title: "Article not found · Vaultix" };
+
+    const url = `${SITE_URL}/resources/${slug}`;
+
     return {
         title: `${article.title} · Vaultix Resources`,
         description: article.description,
+        alternates: {
+            canonical: url,
+        },
+        openGraph: {
+            type: "article",
+            url,
+            title: article.title,
+            description: article.description,
+            siteName: SITE_NAME,
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: article.title,
+            description: article.description,
+        },
     };
 }
 
@@ -124,8 +144,26 @@ export default async function ArticlePage({
     const article = await getArticle(slug);
     if (!article) notFound();
 
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: article.title,
+        description: article.description,
+        url: `${SITE_URL}/resources/${slug}`,
+        datePublished: article.date,
+        publisher: {
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: SITE_URL,
+        },
+    };
+
     return (
         <main className="min-h-screen bg-dark-2 text-light">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
                 <Link
                     href="/#resources"
