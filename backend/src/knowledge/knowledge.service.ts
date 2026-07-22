@@ -137,7 +137,7 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
     // 2. Try to enqueue for async processing via BullMQ
     let enqueued = false;
     try {
-      await this.documentQueue.add(
+      const enqueuePromise = this.documentQueue.add(
         'process-document',
         {
           documentId: document.id,
@@ -153,10 +153,14 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
           removeOnFail: { count: 500 },
         },
       );
-      enqueued = true;
-      this.logger.log(
-        `📄 Document ${document.id} enqueued for processing`,
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Queue add timeout')), 3000),
       );
+
+      await Promise.race([enqueuePromise, timeoutPromise]);
+      enqueued = true;
+      this.logger.log(`📄 Document ${document.id} enqueued for processing`);
     } catch (queueError) {
       this.logger.warn(
         `⚠️  Redis/BullMQ unavailable — processing document ${document.id} synchronously`,

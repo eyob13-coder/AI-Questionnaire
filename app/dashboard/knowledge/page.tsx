@@ -43,6 +43,7 @@ interface KnowledgeDoc {
 
 const statusConfig: Record<string, { label: string; class: string; Icon: typeof CheckCircle2 }> = {
   INDEXED: { label: "Indexed", class: "bg-success/10 text-success", Icon: CheckCircle2 },
+  READY: { label: "Ready", class: "bg-success/10 text-success", Icon: CheckCircle2 },
   PROCESSING: { label: "Processing", class: "bg-info/10 text-info", Icon: Loader2 },
   FAILED: { label: "Failed", class: "bg-danger/10 text-danger", Icon: AlertCircle },
 };
