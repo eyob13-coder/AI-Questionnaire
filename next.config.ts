@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-const BACKEND_URL =
+const rawBackendUrl =
   process.env.BACKEND_INTERNAL_URL || "http://localhost:3001";
+const BACKEND_URL = rawBackendUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

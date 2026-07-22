@@ -20,8 +20,16 @@ export interface ApiErrorInfo {
  * - Sends cookies cross-origin (withCredentials)
  * - Global error handling: 401 -> redirect to /login
  */
+function getApiBaseUrl(): string {
+  const customUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!customUrl) return "/v1";
+  
+  const clean = customUrl.replace(/\/+$/, "");
+  return clean.endsWith("/v1") ? clean : `${clean}/v1`;
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/v1",
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
   timeout: 30_000,
   headers: {
