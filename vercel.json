@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/v1/:path*",
+      "destination": "https://ai-questionnaire-9vup.onrender.com/v1/:path*"
+    }
+  ]
+}
