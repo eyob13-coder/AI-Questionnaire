@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+    <defs>
+      <linearGradient id="bg9" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#26342b" />
+        <stop offset="100%" stop-color="#16201a" />
+      </linearGradient>
+    </defs>
+    <rect width="500" height="500" rx="40" fill="url(#bg9)" />
+    <text x="50" y="90" fill="#8da897" font-family="sans-serif" font-size="26" font-weight="800" letter-spacing="2">0316 AVE</text>
+    <text x="50" y="230" fill="#ffffff" font-family="sans-serif" font-size="84" font-weight="900" letter-spacing="-2">2K</text>
+    <text x="50" y="275" fill="#7a9685" font-family="sans-serif" font-size="14" font-weight="600" letter-spacing="2">CONTRIBUTOR</text>
+    <text x="50" y="298" fill="#7a9685" font-family="sans-serif" font-size="14" font-weight="600" letter-spacing="2">WORLDWIDE</text>
+    <rect x="50" y="360" width="400" height="80" rx="16" fill="#1a241e" stroke="#33473a" stroke-width="1" />
+    <circle cx="90" cy="400" r="18" fill="#f97316" opacity="0.8" />
+    <text x="125" y="405" fill="#d2e2d8" font-family="sans-serif" font-size="13" font-weight="600">Global Compliance Mesh</text>
+  </svg>

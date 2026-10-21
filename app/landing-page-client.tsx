@@ -51,6 +51,7 @@ import { SITE_URL } from "@/lib/seo";
 import { subscribeNewsletter } from "@/lib/resources";
 import { formatApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
+import VideoShowcase from "@/components/landing/video-showcase";
 
 /* ─── Animation helpers ─── */
 const fadeUp = {
@@ -377,6 +378,7 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <TrustedBy />
+      <VideoShowcase />
       <Features />
       <HowItWorks />
       <Stats />
