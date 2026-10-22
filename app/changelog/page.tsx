@@ -9,6 +9,18 @@ export const metadata: Metadata = {
 
 const releases = [
   {
+    version: "v2.0.0 (Enterprise Edition)",
+    date: "October 2026",
+    notes: [
+      "Dual-LLM Adversarial Auditor: Two-pass Generator + Critic pipeline verifying answer claims with exact confidence scores.",
+      "Round-Trip Excel Preservation: 100% preservation of client formatting, merged cells, formulas, notes, and multi-tab structures via ExcelJS.",
+      "Live Technical Sync: Automated ingestion and synchronization from repository codebases (package.json, Dockerfile, prisma schema).",
+      "vCISO Command Center: Multi-tenant client vault switching with isolated knowledge bases for security consultants.",
+      "Self-Serve Pricing Engine: Instant $59 export pass, free 50-question tier, and scalable agency tier.",
+      "Zero-overhead native LLM integration with NVIDIA free AI model endpoints."
+    ],
+  },
+  {
     version: "v1.8.0",
     date: "April 2026",
     notes: [

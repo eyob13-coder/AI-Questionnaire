@@ -115,6 +115,7 @@ const trustedOrigins = Array.from(
       process.env.BETTER_AUTH_URL,
       process.env.NEXT_PUBLIC_APP_URL,
       "http://localhost:3000",
+      "http://localhost:4000",
       "http://localhost:5000",
       "https://*.replit.dev",
       "https://*.replit.app",
@@ -202,13 +203,13 @@ export const auth = betterAuth({
       secure: process.env.NODE_ENV === "production",
     },
     logger: {
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error("[Better Auth] ERROR:", err);
       },
-      warn: (msg: any) => {
+      warn: (msg: unknown) => {
         console.warn("[Better Auth] WARN:", msg);
       },
-      debug: (msg: any) => {
+      debug: (msg: unknown) => {
         console.log("[Better Auth] DEBUG:", msg);
       },
     },

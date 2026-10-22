@@ -140,10 +140,10 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.08 }}
-            className="card-glow rounded-2xl bg-dark-3/50 border `border-white/[0.06]` p-5 `hover:border-white/[0.1]` transition-all duration-300"
+            className="card-glow rounded-2xl bg-dark-3/50 border border-dark-4 p-5 hover:border-dark-5 transition-all duration-300"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl `bg-white/[0.04]` flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-dark-4/60 flex items-center justify-center">
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
             </div>
@@ -160,7 +160,7 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
           href="/dashboard/questionnaires/new"
-          className="group flex items-center gap-4 p-5 rounded-2xl `bg-gradient-to-br` from-brand/10 to-brand/5 border border-brand/20 hover:border-brand/40 transition-all duration-300"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br from-brand/10 to-brand/5 border border-brand/20 hover:border-brand/40 transition-all duration-300"
         >
           <div className="w-12 h-12 rounded-xl bg-brand/15 flex items-center justify-center group-hover:bg-brand/25 transition-colors">
             <Upload className="w-6 h-6 text-brand" />
@@ -174,9 +174,9 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
 
         <Link
           href="/dashboard/knowledge"
-          className="group flex items-center gap-4 p-5 rounded-2xl bg-dark-3/50 border `border-white/[0.06]` `hover:border-white/[0.12]` transition-all duration-300"
+          className="group flex items-center gap-4 p-5 rounded-2xl bg-dark-3/50 border border-dark-4 hover:border-dark-5 transition-all duration-300"
         >
-          <div className="w-12 h-12 rounded-xl `bg-white/[0.04]` flex items-center justify-center `group-hover:bg-white/[0.06]` transition-colors">
+          <div className="w-12 h-12 rounded-xl bg-dark-4/60 flex items-center justify-center group-hover:bg-dark-5 transition-colors">
             <BookOpen className="w-6 h-6 text-light-2" />
           </div>
           <div className="flex-1">
@@ -203,8 +203,8 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
           </Link>
         </div>
 
-        <div className="rounded-2xl border `border-white/[0.06]` overflow-hidden">
-          <div className="hidden sm:grid grid-cols-[1fr_100px_100px_120px] gap-4 px-5 py-3 bg-dark-3/50 text-xs font-semibold text-light-3 uppercase tracking-wider border-b `border-white/[0.06]`">
+        <div className="rounded-2xl border border-dark-4 overflow-hidden">
+          <div className="hidden sm:grid grid-cols-[1fr_100px_100px_120px] gap-4 px-5 py-3 bg-dark-3/50 text-xs font-semibold text-light-3 uppercase tracking-wider border-b border-dark-4">
             <span>Name</span>
             <span>Questions</span>
             <span>Status</span>
@@ -226,7 +226,7 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
               <Link
                 key={q.id}
                 href={`/dashboard/questionnaires/${q.id}`}
-                className="group grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_120px] gap-2 sm:gap-4 px-5 py-4 border-b `border-white/[0.04]` `hover:bg-white/[0.02] transition-colors items-center"
+                className="group grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_120px] gap-2 sm:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
               >
                 <div className="flex items-center gap-3">
                   <FileSpreadsheet className="w-4 h-4 text-light-3 shrink-0 hidden sm:block" />

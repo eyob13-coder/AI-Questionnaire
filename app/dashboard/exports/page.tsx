@@ -64,8 +64,8 @@ const ExportsContent = ({ workspaceId }: { workspaceId: string }) => {
         </p>
       </motion.div>
 
-      <div className="rounded-2xl border `border-white/6` overflow-hidden">
-        <div className="hidden lg:grid grid-cols-[1fr_120px_180px_50px] gap-4 px-5 py-3 bg-dark-3/50 border-b `border-white/6` text-xs font-semibold text-light-3 uppercase tracking-wider">
+      <div className="rounded-2xl border border-dark-4 overflow-hidden">
+        <div className="hidden lg:grid grid-cols-[1fr_120px_180px_50px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-dark-4 text-xs font-semibold text-light-3 uppercase tracking-wider">
           <span>Questionnaire</span>
           <span>Format</span>
           <span>Exported</span>
@@ -86,7 +86,7 @@ const ExportsContent = ({ workspaceId }: { workspaceId: string }) => {
             return (
               <div
                 key={log.id}
-                className="grid grid-cols-1 lg:grid-cols-[1fr_120px_180px_50px] gap-2 lg:gap-4 px-5 py-4 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors items-center"
+                className="grid grid-cols-1 lg:grid-cols-[1fr_120px_180px_50px] gap-2 lg:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <FileSpreadsheet className="w-4 h-4 text-success/60 shrink-0" />
@@ -104,7 +104,7 @@ const ExportsContent = ({ workspaceId }: { workspaceId: string }) => {
                   <p className="text-xs text-light-4">by {actor}</p>
                 </div>
                 <button
-                  className="p-2 text-light-3 hover:text-brand rounded-lg `hover:bg-white/4` transition disabled:opacity-30"
+                  className="p-2 text-light-3 hover:text-brand rounded-lg hover:bg-white/5 transition disabled:opacity-30"
                   title="Re-download (coming soon)"
                   disabled
                 >

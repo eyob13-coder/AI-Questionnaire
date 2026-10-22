@@ -3,11 +3,7 @@
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
+  Suspense, useCallback, useEffect, useRef, useState,
   type DragEvent as ReactDragEvent,
 } from "react";
 import {
@@ -20,26 +16,19 @@ import {
   AlertCircle,
   Search,
   HardDrive,
+  Code2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiDelete, apiGet, apiUpload, formatApiError } from "@/lib/api";
+import { apiUpload, formatApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
+import { useKnowledgeStore } from "@/lib/store";
 import {
   WorkspaceGate,
   PageError,
   PageLoading,
 } from "@/components/dashboard/workspace-state";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-
-interface KnowledgeDoc {
-  id: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  status: "PROCESSING" | "INDEXED" | "FAILED" | string;
-  chunkCount: number;
-  createdAt: string;
-}
+import { TechSyncModal } from "@/components/dashboard/tech-sync-modal";
 
 const statusConfig: Record<string, { label: string; class: string; Icon: typeof CheckCircle2 }> = {
   INDEXED: { label: "Indexed", class: "bg-success/10 text-success", Icon: CheckCircle2 },
@@ -55,59 +44,25 @@ function KnowledgeContent({
   workspaceId: string;
   initialSearch: string;
 }) {
-  const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const docs = useKnowledgeStore((s) => s.documents);
+  const fetchDocuments = useKnowledgeStore((s) => s.fetchDocuments);
+  const deleteDocumentAction = useKnowledgeStore((s) => s.deleteDocument);
+  const loading = useKnowledgeStore((s) => s.isLoading);
+  const error = useKnowledgeStore((s) => s.error);
   const [search, setSearch] = useState(initialSearch);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [techSyncOpen, setTechSyncOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchDocs = useCallback(
-    () => apiGet<KnowledgeDoc[]>(`/workspaces/${workspaceId}/knowledge`),
-    [workspaceId],
-  );
-
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const list = await fetchDocs();
-        if (!cancelled) {
-          setDocs(list);
-          setError(null);
-        }
-      } catch (nextError) {
-        if (!cancelled) {
-          setError(nextError instanceof Error ? nextError.message : "Failed to load documents");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-  
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchDocs]);
+    fetchDocuments(workspaceId);
+  }, [workspaceId, fetchDocuments]);
 
   const reload = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const list = await fetchDocs();
-      setDocs(list);
-      setError(null);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to load documents");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchDocs]);
+    await fetchDocuments(workspaceId);
+  }, [workspaceId, fetchDocuments]);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -136,13 +91,12 @@ function KnowledgeContent({
     const id = deleteTarget;
     setDeleteTarget(null);
 
-    try {
-      await apiDelete(`/workspaces/${workspaceId}/knowledge/${id}`);
-      setDocs((current) => current.filter((doc) => doc.id !== id));
+    const res = await deleteDocumentAction(workspaceId, id);
+    if (res.success) {
       toast.success("Document deleted");
-    } catch (nextError) {
+    } else {
       toast.error("Delete failed", {
-        description: formatApiError(nextError, "Delete failed"),
+        description: res.error || "Delete failed",
       });
     }
   };
@@ -198,10 +152,20 @@ function KnowledgeContent({
           </p>
         </div>
 
-        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-3/50 rounded-full border border-white/[0.06] text-xs text-light-3">
-          <HardDrive className="w-3.5 h-3.5" />
-          {indexedCount} docs - {totalChunks} chunks
-        </span>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setTechSyncOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-brand/10 hover:bg-brand/20 rounded-full border border-brand/30 text-xs font-semibold text-brand transition-all cursor-pointer shadow-sm"
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            Live Technical Sync
+          </button>
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-3/50 rounded-full border border-white/[0.06] text-xs text-light-3">
+            <HardDrive className="w-3.5 h-3.5" />
+            {indexedCount} docs - {totalChunks} chunks
+          </span>
+        </div>
       </motion.div>
 
       <div
@@ -210,11 +174,10 @@ function KnowledgeContent({
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 cursor-pointer ${
-          dragActive
-            ? "border-brand bg-brand/[0.04]"
-            : "border-white/[0.08] bg-dark-3/20 hover:border-white/[0.15]"
-        }`}
+        className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
+          ? "border-brand bg-brand/[0.04]"
+          : "border-white/[0.08] bg-dark-3/20 hover:border-white/[0.15]"
+          }`}
       >
         <input
           ref={fileInputRef}
@@ -255,8 +218,8 @@ function KnowledgeContent({
         />
       </div>
 
-      <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
-        <div className="hidden sm:grid grid-cols-[1fr_80px_80px_110px_120px_40px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-white/[0.06] text-xs font-semibold text-light-3 uppercase tracking-wider">
+      <div className="rounded-2xl border border-dark-4 overflow-hidden">
+        <div className="hidden sm:grid grid-cols-[1fr_80px_80px_110px_120px_40px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-dark-4 text-xs font-semibold text-light-3 uppercase tracking-wider">
           <span>Document</span>
           <span>Size</span>
           <span>Chunks</span>
@@ -267,7 +230,7 @@ function KnowledgeContent({
 
         {filteredDocs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-dark-4/60 border border-white/[0.06] flex items-center justify-center mb-5">
+            <div className="w-16 h-16 rounded-2xl bg-dark-4/60 border border-dark-4 flex items-center justify-center mb-5">
               <BookOpen className="w-7 h-7 text-light-4" />
             </div>
             <p className="text-base font-semibold text-light mb-2">
@@ -287,7 +250,7 @@ function KnowledgeContent({
             return (
               <div
                 key={doc.id}
-                className="grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_110px_120px_40px] gap-2 sm:gap-4 px-5 py-4 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors items-center"
+                className="grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_110px_120px_40px] gap-2 sm:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <FileText className="w-4 h-4 text-light-4 shrink-0" />
@@ -329,6 +292,13 @@ function KnowledgeContent({
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <TechSyncModal
+        open={techSyncOpen}
+        workspaceId={workspaceId}
+        onClose={() => setTechSyncOpen(false)}
+        onSuccess={() => void reload()}
       />
     </div>
   );

@@ -16,7 +16,7 @@ export interface ApiErrorInfo {
 /**
  * Pre-configured Axios instance for all frontend -> NestJS backend API calls.
  *
- * - Base URL from env: NEXT_PUBLIC_API_URL (default http://localhost:3001/api)
+ * - Base URL from env: NEXT_PUBLIC_API_URL (default http://localhost:4000/api)
  * - Sends cookies cross-origin (withCredentials)
  * - Global error handling: 401 -> redirect to /login
  */
@@ -217,7 +217,7 @@ function toApiErrorInfo(error: unknown, fallback?: string): ApiErrorInfo {
     return {
       message: offline
         ? "You're offline. Reconnect to the internet and try again."
-        : "We can't reach the backend right now. Please check your connection and confirm the API service is running.",
+        : "Unable to connect to the server. Please check your internet connection and try again.",
       status,
       code,
       isNetworkError: true,

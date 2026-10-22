@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
-import { useAuthStore } from "@/lib/store/auth-store";
+import { useAuthStore, type User, type Session } from "@/lib/store/auth-store";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isPending } = useSession();
@@ -16,8 +16,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (data) {
-      // Data contains session and user objects
-      setAuth(data.user as any, data.session as any);
+      setAuth(
+        (data.user as unknown as User) || null,
+        (data.session as unknown as Session) || null
+      );
     } else {
       setAuth(null, null);
     }

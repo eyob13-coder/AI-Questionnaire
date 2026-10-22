@@ -1,6 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&family=Space+Grotesk:wght@300..700&display=swap");
 @import "tailwindcss";
 
 :root {
+  /* ── Fonts ── */
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-space-grotesk: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-jetbrains-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
   /* ── Brand Orange ── */
   --custom-brand: #F97316;
   --custom-brand-hover: #EA580C;
@@ -60,6 +66,16 @@
 }
 
 /* ───────────── Base ───────────── */
+*, ::before, ::after {
+  box-sizing: border-box;
+  border-color: #27272A;
+}
+
+/* Ensure arbitrary border-white opacity classes never default to solid white in dark mode */
+[class*="border-white"] {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #27272A transparent;
@@ -242,6 +258,41 @@ body {
   animation: shimmer 2s infinite;
 }
 
+/* 90-degree opposite direction marquees */
+@keyframes marquee-vertical-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes marquee-vertical-down {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-marquee-vertical-up {
+  animation: marquee-vertical-up 36s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-vertical-down {
+  animation: marquee-vertical-down 36s linear infinite;
+  will-change: transform;
+}
+
+.group-pause:hover .animate-marquee-vertical-up,
+.group-pause:hover .animate-marquee-vertical-down,
+.pause-on-hover:hover {
+  animation-play-state: paused;
+}
+
 /* Staggered children */
 .stagger>* {
   opacity: 0;
@@ -385,12 +436,19 @@ body {
 /* ── White-opacity border overrides ──
    Tailwind's border-white/[x] utilities emit rgba(255,255,255,x)
    which are invisible on light backgrounds. We flip them to dark. */
-[data-theme="light"] [class*="border-white"] {
+[data-theme="light"] *,
+html.light * {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] [class*="border-white"],
+html.light [class*="border-white"] {
   border-color: rgba(0, 0, 0, 0.09) !important;
 }
 
 /* border-overlay/* also needs flipping */
-[data-theme="light"] [class*="border-overlay"] {
+[data-theme="light"] [class*="border-overlay"],
+html.light [class*="border-overlay"] {
   border-color: rgba(0, 0, 0, 0.07) !important;
 }
 
@@ -402,6 +460,12 @@ body {
 /* Horizontal rules and divider elements */
 [data-theme="light"] hr {
   border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Prevent hover states from making text white on light mode surfaces */
+[data-theme="light"] .group:hover [class*="group-hover:text-white"],
+[data-theme="light"] [class*="hover:text-white"]:not([class*="bg-brand"]):hover {
+  color: var(--custom-light) !important;
 }
 
 /* divide-white/* utilities */

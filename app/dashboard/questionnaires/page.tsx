@@ -12,24 +12,14 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiGet, apiDelete } from "@/lib/api";
 import { formatDate } from "@/lib/format";
+import { useQuestionnaireStore } from "@/lib/store";
 import {
   WorkspaceGate,
   PageError,
   PageLoading,
 } from "@/components/dashboard/workspace-state";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-
-interface Questionnaire {
-  id: string;
-  name: string;
-  fileName: string;
-  status: string;
-  totalQuestions: number;
-  approvedAnswers?: number;
-  createdAt: string;
-}
 
 const statusConfig: Record<
   string,
@@ -43,9 +33,12 @@ const statusConfig: Record<
 };
 
 function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
-  const [items, setItems] = useState<Questionnaire[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const items = useQuestionnaireStore((s) => s.questionnaires);
+  const fetchQuestionnaires = useQuestionnaireStore((s) => s.fetchQuestionnaires);
+  const deleteQuestionnaire = useQuestionnaireStore((s) => s.deleteQuestionnaire);
+  const loading = useQuestionnaireStore((s) => s.isLoading);
+  const error = useQuestionnaireStore((s) => s.error);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -64,34 +57,15 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
 
     setDeletingId(id);
     try {
-      await apiDelete(`/workspaces/${workspaceId}/questionnaires/${id}`);
-      setItems((prev) => prev.filter((q) => q.id !== id));
-    } catch (err: any) {
-      setError(err.message || "Failed to delete questionnaire");
+      await deleteQuestionnaire(id);
     } finally {
       setDeletingId(null);
     }
   };
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await apiGet<Questionnaire[]>(
-          `/workspaces/${workspaceId}/questionnaires`,
-        );
-        if (!cancelled) setItems(list);
-      } catch (e) {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : "Failed to load");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId]);
+    fetchQuestionnaires(workspaceId);
+  }, [workspaceId, fetchQuestionnaires]);
 
   if (loading) return <PageLoading />;
   if (error) return <PageError message={error} />;
@@ -153,8 +127,8 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/[0.06] overflow-hidden">
-        <div className="hidden lg:grid grid-cols-[1fr_100px_120px_110px_40px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-white/[0.06] text-xs font-semibold text-light-3 uppercase tracking-wider">
+      <div className="rounded-2xl border border-dark-4 overflow-hidden">
+        <div className="hidden lg:grid grid-cols-[1fr_100px_120px_110px_40px] gap-4 px-5 py-3 bg-dark-3/50 border-b border-dark-4 text-xs font-semibold text-light-3 uppercase tracking-wider">
           <span>Name</span>
           <span>Questions</span>
           <span>Status</span>
@@ -177,7 +151,7 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
             <Link
               key={q.id}
               href={`/dashboard/questionnaires/${q.id}`}
-              className="group grid grid-cols-1 lg:grid-cols-[1fr_100px_120px_110px_40px] gap-2 lg:gap-4 px-5 py-4 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors items-center"
+              className="group grid grid-cols-1 lg:grid-cols-[1fr_100px_120px_110px_40px] gap-2 lg:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <FileSpreadsheet className="w-4 h-4 text-light-4 shrink-0" />

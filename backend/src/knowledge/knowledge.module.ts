@@ -9,6 +9,8 @@ import { DOCUMENT_PROCESSING_QUEUE } from '../queue/queue.module';
 
 import { BillingModule } from '../billing/billing.module';
 
+import { TechSyncService } from './tech-sync.service';
+
 @Module({
   imports: [
     RagModule,
@@ -18,8 +20,8 @@ import { BillingModule } from '../billing/billing.module';
     }),
     BullModule.registerQueue({ name: DOCUMENT_PROCESSING_QUEUE }),
   ],
-  providers: [KnowledgeService],
+  providers: [KnowledgeService, TechSyncService],
   controllers: [KnowledgeController],
-  exports: [KnowledgeService],
+  exports: [KnowledgeService, TechSyncService],
 })
 export class KnowledgeModule { }

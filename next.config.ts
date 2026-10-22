@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const rawBackendUrl =
-  process.env.BACKEND_INTERNAL_URL || "http://localhost:3001";
+  process.env.BACKEND_INTERNAL_URL || "http://localhost:4000";
 const BACKEND_URL = rawBackendUrl.replace(/\/+$/, "").replace(/\/v1$/, "");
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },

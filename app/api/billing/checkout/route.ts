@@ -56,23 +56,30 @@ export async function POST(req: Request) {
   const successUrl = `${baseUrl}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${baseUrl}/dashboard/billing?canceled=1`;
 
+  const isOneTime = plan.interval === "one-time";
+
+  const priceData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData = {
+    currency: "usd",
+    unit_amount: plan.amountUsdCents,
+    product_data: {
+      name: `Vaultix ${plan.name}`,
+      description: plan.features.join(" • "),
+    },
+  };
+
+  if (!isOneTime && plan.interval) {
+    priceData.recurring = { interval: plan.interval as "month" | "year" };
+  }
+
   const params: Stripe.Checkout.SessionCreateParams = {
-    mode: "subscription",
+    mode: isOneTime ? "payment" : "subscription",
     payment_method_types: ["card"],
     allow_promotion_codes: true,
     billing_address_collection: "auto",
     line_items: [
       {
         quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: plan.amountUsdCents,
-          recurring: { interval: plan.interval },
-          product_data: {
-            name: `Vaultix ${plan.name}`,
-            description: plan.features.join(" • "),
-          },
-        },
+        price_data: priceData,
       },
     ],
     success_url: successUrl,
@@ -82,14 +89,17 @@ export async function POST(req: Request) {
       workspaceId: body.workspaceId ?? "",
       userId: session?.user?.id ?? "",
     },
-    subscription_data: {
+  };
+
+  if (!isOneTime) {
+    params.subscription_data = {
       metadata: {
         plan: plan.key,
         workspaceId: body.workspaceId ?? "",
         userId: session?.user?.id ?? "",
       },
-    },
-  };
+    };
+  }
 
   if (session?.user?.email) {
     params.customer_email = session.user.email;

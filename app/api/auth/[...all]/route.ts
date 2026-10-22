@@ -3,19 +3,17 @@ import { toNextJsHandler } from "better-auth/next-js";
 
 const handlers = toNextJsHandler(auth);
 
-import * as fs from "fs";
-
 export const POST = async (req: Request) => {
   try {
     const res = await handlers.POST(req);
     if (res.status >= 400) {
       const clone = res.clone();
       const text = await clone.text().catch(() => "");
-      fs.writeFileSync("better-auth-error.log", `[auth] POST error ${res.status}: ${text}`);
+      console.error(`[auth] POST error ${res.status}: ${text}`);
     }
     return res;
   } catch (error) {
-    fs.writeFileSync("better-auth-error.log", `[auth] POST exception: ${String(error)}`);
+    console.error(`[auth] POST exception: ${String(error)}`);
     throw error;
   }
 };

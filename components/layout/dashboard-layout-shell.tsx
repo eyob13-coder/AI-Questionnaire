@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Topbar from "@/components/layout/topbar";
-import { Clock, X, Zap } from "lucide-react";
+import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -50,7 +50,7 @@ function TrialBanner() {
 
   return (
     <div className={`flex items-center gap-3 px-4 sm:px-6 py-2.5 border-b ${colors.bg} border-b`}>
-      <Clock className={`w-4 h-4 shrink-0 ${colors.icon}`} />
+      <FontAwesomeIcon icon={byPrefixAndName.fans["clock"]} className={`w-3.5 h-3.5 shrink-0 ${colors.icon}`} />
       <p className="text-xs sm:text-sm text-light-2 flex-1 min-w-0">
         <span className={`font-semibold ${colors.text}`}>{daysLeft} days left</span> in your free trial.
         <span className="hidden sm:inline"> Add a payment method to keep uninterrupted access.</span>
@@ -59,15 +59,15 @@ function TrialBanner() {
         href="/dashboard/billing"
         className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white transition-all ${colors.btn}`}
       >
-        <Zap className="w-3 h-3" />
+        <FontAwesomeIcon icon={byPrefixAndName.fans["bolt"]} className="w-3 h-3" />
         Upgrade
       </Link>
       <button
         onClick={() => setDismissed(true)}
-        className="shrink-0 p-1 text-light-4 hover:text-light-2 rounded-lg transition-colors"
+        className="shrink-0 p-1 text-light-4 hover:text-light-2 rounded-lg transition-colors cursor-pointer"
         aria-label="Dismiss"
       >
-        <X className="w-4 h-4" />
+        <FontAwesomeIcon icon={byPrefixAndName.fans["xmark"]} className="w-3.5 h-3.5" />
       </button>
     </div>
   );
@@ -94,8 +94,8 @@ export default function DashboardLayoutShell({
             />
             <div className="absolute left-0 top-0 bottom-0 w-72 bg-dark-2 border-r border-white/[0.06] p-4 animate-slide-up">
               <div className="flex items-center justify-between mb-6">
-                <Link href="/" className="flex items-center gap-2.5 group">
-                  <div className="relative w-8 h-8 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+                <Link href="/" className="flex items-center gap-2.5">
+                  <div className="relative w-8 h-8 flex-shrink-0">
                     <Image src="/logo.svg" alt="Vaultix Logo" fill className="object-contain" priority />
                   </div>
                   <span className="font-heading text-lg font-bold">
@@ -104,9 +104,9 @@ export default function DashboardLayoutShell({
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}
-                  className="p-2 text-light-3 hover:text-light rounded-lg"
+                  className="p-2 text-light-3 hover:text-light rounded-lg cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <FontAwesomeIcon icon={byPrefixAndName.fans["xmark"]} className="w-4 h-4" />
                 </button>
               </div>
               <nav className="space-y-1">

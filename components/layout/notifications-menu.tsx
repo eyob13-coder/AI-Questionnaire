@@ -4,41 +4,30 @@ import clsx from "clsx";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
-import {
-  Bell,
-  BookOpen,
-  CheckCheck,
-  CreditCard,
-  FileSpreadsheet,
-  Loader2,
-  RefreshCw,
-  ShieldAlert,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import { useWorkspace } from "@/lib/workspace";
 import { formatRelativeTime } from "@/lib/format";
 import type { DashboardNotification } from "@/lib/notifications";
 import { useNotifications } from "@/lib/use-notifications";
 
 function notificationIcon(notification: DashboardNotification) {
-  const iconClass = "w-4 h-4";
+  const iconClass = "w-3.5 h-3.5";
 
   switch (notification.kind) {
     case "QUESTIONNAIRE_COMPLETED":
     case "QUESTIONNAIRE_REVIEW_REQUIRED":
     case "QUESTIONNAIRE_FAILED":
-      return <FileSpreadsheet className={iconClass} />;
+      return <FontAwesomeIcon icon={byPrefixAndName.fans["table-cells"]} className={iconClass} />;
     case "KNOWLEDGE_INDEXED":
     case "KNOWLEDGE_FAILED":
-      return <BookOpen className={iconClass} />;
+      return <FontAwesomeIcon icon={byPrefixAndName.fans["book-open"]} className={iconClass} />;
     case "TEAM_ACTIVITY":
-      return <Users className={iconClass} />;
+      return <FontAwesomeIcon icon={byPrefixAndName.fans["users"]} className={iconClass} />;
     case "BILLING_ALERT":
-      return <CreditCard className={iconClass} />;
+      return <FontAwesomeIcon icon={byPrefixAndName.fans["credit-card"]} className={iconClass} />;
     case "SYSTEM":
     default:
-      return <Sparkles className={iconClass} />;
+      return <FontAwesomeIcon icon={byPrefixAndName.fans["wand-magic-sparkles"]} className={iconClass} />;
   }
 }
 
@@ -123,10 +112,10 @@ export default function NotificationsMenu() {
         aria-label="Open notifications"
         aria-expanded={open}
         aria-controls={menuId}
-        className="relative p-2.5 text-light-3 hover:text-light rounded-xl hover:bg-white/[0.04] transition"
+        className="relative p-2.5 text-light-3 hover:text-light rounded-xl hover:bg-white/[0.04] transition cursor-pointer"
         onClick={toggleOpen}
       >
-        <Bell className="w-[18px] h-[18px]" />
+        <FontAwesomeIcon icon={byPrefixAndName.fans["bell"]} className="w-4 h-4" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-brand text-[10px] font-bold text-white flex items-center justify-center border border-dark shadow-[0_0_0_2px_rgba(11,15,20,0.9)]">
             {unreadBadge}
@@ -157,20 +146,23 @@ export default function NotificationsMenu() {
                   type="button"
                   aria-label="Refresh notifications"
                   onClick={() => void refresh()}
-                  className="p-2 rounded-lg text-light-4 hover:text-light-2 hover:bg-white/[0.04] transition-colors"
+                  className="p-2 rounded-lg text-light-4 hover:text-light-2 hover:bg-white/[0.04] transition-colors cursor-pointer"
                 >
-                  <RefreshCw className={clsx("w-4 h-4", isRefreshing && "animate-spin")} />
+                  <FontAwesomeIcon
+                    icon={byPrefixAndName.fans["arrows-rotate"]}
+                    className={clsx("w-3.5 h-3.5", isRefreshing && "animate-spin")}
+                  />
                 </button>
                 <button
                   type="button"
                   disabled={unreadCount === 0 || isMarkingAllRead}
                   onClick={() => void markAllAsRead()}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium text-light-3 hover:text-light disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.04] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium text-light-3 hover:text-light disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.04] transition-colors cursor-pointer"
                 >
                   {isMarkingAllRead ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <FontAwesomeIcon icon={byPrefixAndName.fans["spinner"]} className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <CheckCheck className="w-3.5 h-3.5" />
+                    <FontAwesomeIcon icon={byPrefixAndName.fans["check-double"]} className="w-3.5 h-3.5" />
                   )}
                   Mark all read
                 </button>
@@ -179,7 +171,7 @@ export default function NotificationsMenu() {
 
             {error && (
               <div className="mx-4 mt-4 rounded-xl border border-danger/20 bg-danger/10 px-3 py-2.5 text-xs text-danger flex items-start gap-2">
-                <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <FontAwesomeIcon icon={byPrefixAndName.fans["shield-halved"]} className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <p className="font-medium">Notifications unavailable</p>
                   <p className="mt-0.5 text-danger/90">{error}</p>
@@ -190,7 +182,7 @@ export default function NotificationsMenu() {
             <div className="max-h-[28rem] overflow-y-auto p-2">
               {workspaceLoading ? (
                 <div className="px-4 py-10 text-center">
-                  <Loader2 className="w-5 h-5 text-light-4 animate-spin mx-auto" />
+                  <FontAwesomeIcon icon={byPrefixAndName.fans["spinner"]} className="w-5 h-5 text-light-4 animate-spin mx-auto" />
                   <p className="text-sm font-medium text-light mt-4">Loading workspace</p>
                   <p className="text-xs text-light-4 mt-1">
                     We&apos;re fetching notification context for your active workspace.
@@ -198,7 +190,7 @@ export default function NotificationsMenu() {
                 </div>
               ) : workspaceError ? (
                 <div className="px-4 py-10 text-center">
-                  <ShieldAlert className="w-5 h-5 text-danger mx-auto" />
+                  <FontAwesomeIcon icon={byPrefixAndName.fans["shield-halved"]} className="w-5 h-5 text-danger mx-auto" />
                   <p className="text-sm font-medium text-light mt-4">Workspace unavailable</p>
                   <p className="text-xs text-light-4 mt-1">{workspaceError}</p>
                 </div>
@@ -218,7 +210,7 @@ export default function NotificationsMenu() {
               ) : items.length === 0 ? (
                 <div className="px-4 py-10 text-center">
                   <div className="mx-auto w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-light-4" />
+                    <FontAwesomeIcon icon={byPrefixAndName.fans["bell"]} className="w-5 h-5 text-light-4" />
                   </div>
                   <p className="text-sm font-medium text-light mt-4">No notifications yet</p>
                   <p className="text-xs text-light-4 mt-1">
@@ -252,7 +244,7 @@ export default function NotificationsMenu() {
                             notificationColor(notification.priority),
                           )}
                         >
-                          {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : notificationIcon(notification)}
+                          {pending ? <FontAwesomeIcon icon={byPrefixAndName.fans["spinner"]} className="w-4 h-4 animate-spin" /> : notificationIcon(notification)}
                         </div>
 
                         <div className="min-w-0 flex-1">

@@ -22,14 +22,39 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { Body } from '@nestjs/common';
 import { KnowledgeService } from './knowledge.service';
+import { TechSyncService, TechManifestInput } from './tech-sync.service';
 
 @ApiTags('Knowledge Base')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('workspaces/:workspaceId/knowledge')
 export class KnowledgeController {
-  constructor(private readonly knowledgeService: KnowledgeService) { }
+  constructor(
+    private readonly knowledgeService: KnowledgeService,
+    private readonly techSyncService: TechSyncService,
+  ) { }
+
+  @Post('tech-sync')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({
+    summary: 'Auto-extract verified technical compliance facts from codebase manifests',
+  })
+  async syncTechnicalManifests(
+    @Param('workspaceId') workspaceId: string,
+    @Body() body: TechManifestInput,
+  ) {
+    const facts = this.techSyncService.extractFacts(body);
+    const result = await this.techSyncService.syncToKnowledgeBase(workspaceId, facts);
+    return {
+      success: true,
+      factsCount: facts.length,
+      chunkCount: result.chunkCount,
+      documentId: result.documentId,
+      facts,
+    };
+  }
 
   @Post('upload')
   @Roles(Role.OWNER, Role.EDITOR)

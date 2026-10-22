@@ -3,35 +3,25 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  LayoutDashboard,
-  FileSpreadsheet,
-  BookOpen,
-  Download,
-  Users,
-  CreditCard,
-  ScrollText,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  LogOut,
-} from "lucide-react";
 import Image from "next/image";
-import { useSession, signOut } from "@/lib/auth-client";
+import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
+import { useSession } from "@/lib/auth-client";
+import { useAuthStore } from "@/lib/store";
+import WorkspaceSwitcher from "@/components/layout/workspace-switcher";
+import { SidebarNavItem } from "@/components/layout/sidebar-nav-item";
 
 const mainNav = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", hoverClass: "group-hover:scale-110" },
-  { label: "Questionnaires", icon: FileSpreadsheet, href: "/dashboard/questionnaires", hoverClass: "group-hover:-translate-y-1" },
-  { label: "Knowledge Base", icon: BookOpen, href: "/dashboard/knowledge", hoverClass: "group-hover:-rotate-12" },
-  { label: "Exports", icon: Download, href: "/dashboard/exports", hoverClass: "group-hover:animate-bounce" },
+  { label: "Overview", icon: byPrefixAndName.fans["house"], href: "/dashboard" },
+  { label: "Questionnaires", icon: byPrefixAndName.fans["table-cells"], href: "/dashboard/questionnaires" },
+  { label: "Knowledge Base", icon: byPrefixAndName.fans["book-open"], href: "/dashboard/knowledge" },
+  { label: "Exports", icon: byPrefixAndName.fans["file-export"], href: "/dashboard/exports" },
 ];
 
-const bottomNav = [
-  { label: "Team & Roles", icon: Users, href: "/dashboard/team", hoverClass: "group-hover:[transform:rotateY(180deg)]" },
-  { label: "Billing", icon: CreditCard, href: "/dashboard/billing", hoverClass: "group-hover:-rotate-6" },
-  { label: "Audit Log", icon: ScrollText, href: "/dashboard/audit", hoverClass: "group-hover:translate-x-1" },
-  { label: "Settings", icon: Settings, href: "/dashboard/settings", hoverClass: "group-hover:rotate-90" },
+const workspaceNav = [
+  { label: "Team & Roles", icon: byPrefixAndName.fans["users"], href: "/dashboard/team" },
+  { label: "Billing & Plans", icon: byPrefixAndName.fans["credit-card"], href: "/dashboard/billing" },
+  { label: "Audit Log", icon: byPrefixAndName.fans["scroll"], href: "/dashboard/audit" },
+  { label: "Settings", icon: byPrefixAndName.fans["gear"], href: "/dashboard/settings" },
 ];
 
 export default function Sidebar() {
@@ -39,159 +29,169 @@ export default function Sidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const { data: sessionData } = useSession();
+  const authStoreUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
-  const user = sessionData?.user;
+  const user = authStoreUser || sessionData?.user;
   const normalizedEmail = user?.email?.trim() || "";
-  const displayName =
-    user?.name?.trim() ||
-    (normalizedEmail ? normalizedEmail.split("@")[0] : "Account");
+  const displayName = user?.name?.trim() || (normalizedEmail ? normalizedEmail.split("@")[0] : "Account");
   const displayEmail = normalizedEmail || "Signed in";
   const displayInitial = displayName.charAt(0).toUpperCase() || "U";
 
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
-  };
+  const isActive = (href: string) => href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
   return (
     <aside
-      className={`
-        hidden lg:flex flex-col h-screen sticky top-0
-        bg-dark-2 border-r border-white/[0.06]
-        transition-all duration-300 ease-in-out
-        ${collapsed ? "w-[72px]" : "w-[260px]"}
-      `}
+      className={`hidden lg:flex flex-col h-screen sticky top-0 bg-dark-2/95 backdrop-blur-2xl border-r border-white/[0.06] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none z-30 ${collapsed ? "w-[72px]" : "w-[264px]"
+        }`}
     >
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06] shrink-0 group overflow-hidden">
-        <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
-          <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
-        </div>
-        {!collapsed && (
-          <span className="font-heading text-lg font-bold tracking-tight whitespace-nowrap">
-            Vault<span className="text-brand">ix</span>
-          </span>
-        )}
-      </Link>
-
-      {/* New Questionnaire button */}
-      <div className="px-3 mt-4 mb-2 shrink-0">
-        <Link
-          href="/dashboard/questionnaires/new"
-          className={`
-            flex items-center gap-2 px-3 py-2.5 rounded-xl group
-            bg-brand hover:bg-brand-hover text-white text-sm font-semibold
-            transition-all duration-200 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]
-            ${collapsed ? "justify-center" : ""}
-          `}
-        >
-          <Plus className="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
-          {!collapsed && <span className="transition-transform duration-300 group-hover:translate-x-0.5">New Questionnaire</span>}
+      {/* Brand Header — Single clean logo area with no duplicate opener and no version tag */}
+      <div className={`h-16 px-4 flex items-center border-b border-white/[0.06] shrink-0 ${collapsed ? "justify-center" : ""}`}>
+        <Link href="/" className="flex items-center gap-2.5 group overflow-hidden">
+          <div className="relative w-8 h-8 rounded-xl flex items-center justify-center p-1.5 transition-transform duration-200 group-hover:scale-105 shrink-0 shadow-sm shadow-brand/10">
+            <Image src="/logo.svg" alt="Vaultix" fill className="object-contain p-1" priority />
+          </div>
+          {!collapsed && (
+            <span className="font-heading text-lg font-bold tracking-tight">
+              Vault<span className="text-brand">ix</span>
+            </span>
+          )}
         </Link>
       </div>
 
-      {/* Main navigation */}
-      <nav className="flex-1 px-3 py-2 overflow-y-auto">
-        <div className="space-y-1">
-          {mainNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                transition-all duration-200 group
-                ${collapsed ? "justify-center" : ""}
-                ${isActive(item.href)
-                  ? "bg-brand/10 text-brand border border-brand/20"
-                  : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
-                }
-              `}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${item.hoverClass} ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          ))}
+      {/* Workspace Switcher */}
+      <div className={`pt-3 shrink-0 ${collapsed ? "px-2" : "px-3"}`}>
+        <WorkspaceSwitcher collapsed={collapsed} />
+      </div>
+
+      {/* Quick Action Button with comfortable gap when collapsed */}
+      <div className={`shrink-0 ${collapsed ? "pt-3.5 pb-2 px-2 flex justify-center" : "px-3 pt-3 pb-2"}`}>
+        <Link
+          href="/dashboard/questionnaires/new"
+          className={`group flex items-center bg-brand hover:bg-brand-hover text-white text-xs font-semibold transition-all duration-200 shadow-md shadow-brand/20 hover:shadow-brand/35 active:scale-[0.98] ${collapsed ? "w-10 h-10 rounded-xl justify-center p-0" : "justify-between gap-2.5 px-3 py-2.5 rounded-xl"
+            }`}
+          title={collapsed ? "New Questionnaire" : undefined}
+        >
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={byPrefixAndName.fans["plus"]} className="w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:rotate-90" />
+            {!collapsed && <span>New Questionnaire</span>}
+          </div>
+          {!collapsed && (
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-black/20 rounded text-white/80 border border-white/10">
+              ⌘N
+            </kbd>
+          )}
+        </Link>
+      </div>
+
+      {/* Navigation Sections with generous icon gaps in collapsed mode */}
+      <nav className={`flex-1 py-2 overflow-y-auto overflow-x-hidden ${collapsed ? "px-2 space-y-6" : "px-3 space-y-5"}`}>
+        <div>
+          {!collapsed && (
+            <div className="px-3 mb-2 flex items-center justify-between text-[10px] font-mono font-semibold tracking-wider text-light-4 uppercase">
+              <span>Workflow</span>
+              <FontAwesomeIcon icon={byPrefixAndName.fans["wand-magic-sparkles"]} className="w-3 h-3 text-brand/50" />
+            </div>
+          )}
+          <div className={collapsed ? "space-y-3" : "space-y-1"}>
+            {mainNav.map((item) => (
+              <SidebarNavItem key={item.href} label={item.label} icon={item.icon} href={item.href} active={isActive(item.href)} collapsed={collapsed} />
+            ))}
+          </div>
         </div>
 
-        <div className="my-4 mx-3 h-px bg-white/[0.06]" />
-
-        <div className="space-y-1">
-          {bottomNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                transition-all duration-200 group
-                ${collapsed ? "justify-center" : ""}
-                ${isActive(item.href)
-                  ? "bg-brand/10 text-brand border border-brand/20"
-                  : "text-light-2 hover:text-light hover:bg-white/[0.04] border border-transparent"
-                }
-              `}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${item.hoverClass} ${isActive(item.href) ? "text-brand" : "text-light-3 group-hover:text-light-2"}`} />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          ))}
+        <div>
+          {!collapsed && (
+            <div className="px-3 mb-2 text-[10px] font-mono font-semibold tracking-wider text-light-4 uppercase">
+              Management
+            </div>
+          )}
+          <div className={collapsed ? "space-y-3" : "space-y-1"}>
+            {workspaceNav.map((item) => (
+              <SidebarNavItem key={item.href} label={item.label} icon={item.icon} href={item.href} active={isActive(item.href)} collapsed={collapsed} />
+            ))}
+          </div>
         </div>
       </nav>
 
-      {/* Footer: User + collapse toggle */}
-      <div className="px-3 py-3 border-t border-white/[0.06] shrink-0">
-        {/* User */}
-        <div className={`flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.04] cursor-pointer transition-all ${collapsed ? "justify-center" : ""}`}>
-          {user?.image ? (
-            // Use img to avoid remote image host config friction with social avatars.
-            <img
-              src={user.image}
-              alt={displayName}
-              className="w-8 h-8 rounded-full object-cover shrink-0"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand shrink-0">
-              {displayInitial}
-            </div>
-          )}
+      {/* Footer: User Profile & Dedicated Single Sidebar Opener */}
+      <div className={`border-t border-white/[0.06] bg-dark-3/30 shrink-0 ${collapsed ? "p-2.5" : "p-3"}`}>
+        <div
+          className={`flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/[0.04] transition-all cursor-pointer ${collapsed ? "justify-center p-1.5" : ""}`}
+          onClick={() => router.push("/dashboard/settings")}
+          title={collapsed ? displayName : undefined}
+        >
+          <div className="relative shrink-0">
+            {user?.image ? (
+              <img src={user.image} alt={displayName} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 border border-brand/20 flex items-center justify-center text-xs font-bold text-brand ring-1 ring-brand/20">
+                {displayInitial}
+              </div>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-dark-2" />
+          </div>
+
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-light truncate">{displayName}</p>
-              <p className="text-xs text-light-3 truncate">{displayEmail}</p>
+              <p className="text-xs font-semibold text-light truncate leading-tight">{displayName}</p>
+              <p className="text-[11px] text-light-4 truncate leading-tight mt-0.5">{displayEmail}</p>
             </div>
           )}
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={async () => {
-            localStorage.removeItem("vaultix.activeWorkspaceId");
-            await signOut();
-            router.push("/");
-          }}
-          className={`mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-light-3 hover:text-red-400 hover:bg-red-500/10 transition-all group ${collapsed ? "justify-center" : ""}`}
-          title={collapsed ? "Log Out" : undefined}
-        >
-          <LogOut className="w-[18px] h-[18px] shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
-          {!collapsed && <span>Log Out</span>}
-        </button>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-light-3 hover:text-light-2 hover:bg-white/[0.04] transition-all text-xs"
-        >
+        {/* Action strip with generous gap when collapsed */}
+        <div className="mt-2 pt-2 border-t border-white/[0.04]">
           {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
+            <div className="flex flex-col items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-light-3 hover:text-brand hover:bg-brand/10 transition-all cursor-pointer"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+              >
+                <FontAwesomeIcon icon={byPrefixAndName.fans["angles-right"]} className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  router.push("/");
+                }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-light-3 hover:text-danger hover:bg-danger/10 transition-all cursor-pointer"
+                title="Sign Out"
+                aria-label="Sign Out"
+              >
+                <FontAwesomeIcon icon={byPrefixAndName.fans["arrow-right-from-bracket"]} className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ) : (
-            <>
-              <ChevronLeft className="w-4 h-4" />
-              <span>Collapse</span>
-            </>
+            <div className="flex items-center justify-between gap-1.5">
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  router.push("/");
+                }}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-light-3 hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                title="Log Out"
+              >
+                <FontAwesomeIcon icon={byPrefixAndName.fans["arrow-right-from-bracket"]} className="w-3.5 h-3.5 shrink-0" />
+                <span>Sign Out</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCollapsed(true)}
+                className="flex items-center justify-center p-1.5 rounded-lg text-light-3 hover:text-light hover:bg-white/[0.06] transition-colors cursor-pointer"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <FontAwesomeIcon icon={byPrefixAndName.fans["angles-left"]} className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
-        </button>
+        </div>
       </div>
     </aside>
   );

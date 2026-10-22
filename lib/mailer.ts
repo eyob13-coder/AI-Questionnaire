@@ -34,7 +34,7 @@ function getTransporter(): nodemailer.Transporter | null {
   });
 
   // Verify connection works
-  transporter.verify(function (error, success) {
+  transporter.verify(function (error) {
     if (error) {
       console.error("[mailer] Connection verification failed:", error);
     } else {

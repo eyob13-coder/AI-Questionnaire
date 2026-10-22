@@ -8,8 +8,8 @@ import { RagModule } from '../rag/rag.module';
 import { QUESTIONNAIRE_GENERATION_QUEUE } from '../queue/queue.module';
 import { AuditModule } from '../audit/audit.module';
 import { QueueModule } from '../queue/queue.module';
-
 import { BillingModule } from '../billing/billing.module';
+import { ExcelRoundtripService } from './excel-roundtrip.service';
 
 @Module({
   imports: [
@@ -22,8 +22,8 @@ import { BillingModule } from '../billing/billing.module';
     BullModule.registerQueue({ name: QUESTIONNAIRE_GENERATION_QUEUE }),
     QueueModule,
   ],
-  providers: [QuestionnairesService],
+  providers: [QuestionnairesService, ExcelRoundtripService],
   controllers: [QuestionnairesController],
-  exports: [QuestionnairesService],
+  exports: [QuestionnairesService, ExcelRoundtripService],
 })
 export class QuestionnairesModule { }

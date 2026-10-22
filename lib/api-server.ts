@@ -13,7 +13,7 @@
 const BASE_URL =
   process.env.BACKEND_INTERNAL_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:3001/v1";
+  "http://localhost:4000/v1";
 
 interface ServerFetchOptions {
   /** Extra headers to forward (e.g. cookies). */

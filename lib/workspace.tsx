@@ -4,10 +4,11 @@ import {
     createContext,
     useContext,
     useEffect,
+    useCallback,
     useState,
     type ReactNode,
 } from "react";
-import { apiGet, apiPost } from "./api";
+import { useWorkspaceStore } from "@/lib/store/workspace-store";
 
 export interface Workspace {
     id: string;
@@ -33,34 +34,19 @@ const WorkspaceContext = createContext<WorkspaceContextValue | undefined>(
     undefined,
 );
 
-const STORAGE_KEY = "vaultix.activeWorkspaceId";
-
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const load = async () => {
-        setIsLoading(true);
+    const load = useCallback(async () => {
         setError(null);
         try {
-            const list = await apiGet<Workspace[]>("/workspaces");
-            const resolvedList =
-                list.length > 0
-                    ? list
-                    : [await apiPost<Workspace>("/workspaces/bootstrap")];
-
-            setWorkspaces(resolvedList);
-
-            const stored =
-                typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-            const initial =
-                resolvedList.find((w) => w.id === stored)?.id || resolvedList[0]?.id || null;
-            setActiveId(initial);
-            if (initial && typeof window !== "undefined") {
-                localStorage.setItem(STORAGE_KEY, initial);
-            }
+            const list = await useWorkspaceStore.getState().fetchWorkspaces();
+            setWorkspaces(list as unknown as Workspace[]);
+            const currentActive = useWorkspaceStore.getState().activeWorkspaceId;
+            setActiveId(currentActive);
         } catch (err: unknown) {
             const e = err as { response?: { status?: number }; message?: string };
             if (e?.response?.status !== 401) {
@@ -69,51 +55,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        let cancelled = false;
-
+        let isMounted = true;
         (async () => {
-            try {
-                const list = await apiGet<Workspace[]>("/workspaces");
-                const resolvedList =
-                    list.length > 0
-                        ? list
-                        : [await apiPost<Workspace>("/workspaces/bootstrap")];
-
-                if (cancelled) return;
-
-                setWorkspaces(resolvedList);
-
-                const stored =
-                    typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-                const initial =
-                    resolvedList.find((w) => w.id === stored)?.id || resolvedList[0]?.id || null;
-                setActiveId(initial);
-                if (initial && typeof window !== "undefined") {
-                    localStorage.setItem(STORAGE_KEY, initial);
-                }
-            } catch (err: unknown) {
-                const e = err as { response?: { status?: number }; message?: string };
-                if (!cancelled && e?.response?.status !== 401) {
-                    setError(e?.message || "Failed to load workspaces");
-                }
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
+            if (isMounted) {
+                await load();
             }
         })();
-
         return () => {
-            cancelled = true;
+            isMounted = false;
         };
-    }, []);
+    }, [load]);
 
     const setActiveWorkspace = (id: string) => {
         setActiveId(id);
-        if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, id);
+        useWorkspaceStore.getState().setActiveWorkspaceId(id);
     };
 
     const workspace = workspaces.find((w) => w.id === activeId) || null;

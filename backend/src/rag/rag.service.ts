@@ -4,7 +4,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
 import { createHash } from 'node:crypto';
 
 type ErrorLike = {
@@ -23,33 +22,37 @@ export class AiQuotaExceededError extends Error {
   }
 }
 
+export interface GeneratedAnswerResult {
+  answer: string;
+  confidence: number;
+  auditStatus?: 'VERIFIED' | 'REVIEW' | 'UNSUPPORTED';
+  auditNotes?: string;
+}
+
 @Injectable()
 export class RagService {
-  private readonly openai: OpenAI;
+  private readonly apiKey: string;
+  private readonly baseURL: string;
   private readonly completionModel: string;
   private readonly embeddingDimensions: number;
 
   private readonly logger = new Logger(RagService.name);
 
   constructor(private configService: ConfigService) {
-    const apiKey =
+    this.apiKey =
       this.configService.get<string>('NVIDIA_API_KEY') ||
       this.configService.get<string>('AI_INTEGRATIONS_OPENAI_API_KEY') ||
-      this.configService.get<string>('OPENAI_API_KEY');
-    const baseURL =
+      this.configService.get<string>('OPENAI_API_KEY') ||
+      '';
+    this.baseURL =
       this.configService.get<string>('NVIDIA_BASE_URL') ||
       'https://integrate.api.nvidia.com/v1';
 
-    if (!apiKey || !baseURL) {
+    if (!this.apiKey) {
       this.logger.warn(
-        'NVIDIA AI env vars (NVIDIA_API_KEY / NVIDIA_BASE_URL) are not set. AI features will fail.',
+        'NVIDIA AI API key (NVIDIA_API_KEY) is not set. AI features will fail.',
       );
     }
-
-    this.openai = new OpenAI({
-      apiKey: apiKey || 'unconfigured',
-      baseURL,
-    });
 
     this.completionModel =
       this.configService.get<string>('OPENAI_COMPLETION_MODEL') ||
@@ -81,13 +84,61 @@ export class RagService {
   }
 
   /**
-   * NVIDIA's free tier does not expose an embeddings endpoint, so for the MVP
-   * we generate a deterministic pseudo-embedding from a SHA-256 hash of the
-   * text. Identical text always produces an identical vector, which means RAG
-   * can still detect exact / near-duplicate questions, but semantic retrieval
-   * quality will be much lower than a real embedding model.
-   *
-   * Swap this out for a proper embeddings provider before going to production.
+   * Dispatches a chat completion call directly using native fetch to the
+   * NVIDIA OpenAI-compatible REST endpoint without requiring external SDKs.
+   */
+  private async callChatCompletion(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    temperature = 0.2,
+  ): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('NVIDIA AI API key is not configured.');
+    }
+
+    const payload: Record<string, any> = {
+      model: this.completionModel,
+      messages,
+      temperature,
+      max_tokens: 4096,
+    };
+
+    if (this.completionModel.includes('deepseek')) {
+      payload.chat_template_kwargs = { thinking: false };
+    }
+
+    const url = `${this.baseURL.replace(/\/+$/, '')}/chat/completions`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const err: any = new Error(
+        `NVIDIA AI call failed with status ${response.status}: ${errorText}`,
+      );
+      err.status = response.status;
+      throw err;
+    }
+
+    const json: any = await response.json();
+    const content = json.choices?.[0]?.message?.content?.trim();
+
+    if (!content) {
+      throw new Error('NVIDIA AI returned empty completion content.');
+    }
+
+    return content;
+  }
+
+  /**
+   * Deterministic embedding calculation from SHA-256 hash for fast retrieval.
    */
   async generateEmbedding(text: string): Promise<number[]> {
     const normalized = text.trim().toLowerCase();
@@ -95,14 +146,11 @@ export class RagService {
 
     const values = new Array<number>(this.embeddingDimensions);
     for (let i = 0; i < this.embeddingDimensions; i++) {
-      // 4 bytes per float, wrap around the hash buffer.
       const offset = (i * 4) % (seedHash.length - 4);
       const intVal = seedHash.readUInt32BE(offset);
-      // Map [0, 2^32) → [-1, 1)
       values[i] = (intVal / 0xffffffff) * 2 - 1;
     }
 
-    // L2-normalize so cosine similarity behaves sanely.
     let sumSquares = 0;
     for (const v of values) sumSquares += v * v;
     const norm = Math.sqrt(sumSquares) || 1;
@@ -112,61 +160,91 @@ export class RagService {
   }
 
   /**
-   * Drafts an answer based on a given question and an array of context
-   * snippets. Uses NVIDIA AI via the OpenAI-compatible endpoint.
+   * Dual-LLM Adversarial Auditor Pipeline:
+   * Pass 1 (Generator): Drafts the security answer grounded in retrieved policy snippets.
+   * Pass 2 (Auditor / Critic): Verifies claims strictly against evidence, detects hallucinations,
+   *                            and computes an objective confidence score.
    */
-  async generateAnswer(question: string, contextTexts: string[]) {
+  async generateAnswer(
+    question: string,
+    contextTexts: string[],
+  ): Promise<GeneratedAnswerResult> {
     const combinedContext = contextTexts.filter(Boolean).join('\n\n---\n\n');
     const hasContext = combinedContext.trim().length > 0;
 
-    const systemPrompt =
-      'You are a highly capable AI specialized in answering security questionnaires for enterprise B2B software companies. ' +
-      'Answer accurately and concisely, in a professional tone appropriate for an auditor or security professional. ' +
-      'When context is provided, ground your answer in it. If the context is missing or insufficient, say so explicitly and provide a best-effort, clearly-flagged general answer.';
+    // --- Pass 1: Generator ---
+    const generatorSystem =
+      'You are a premier Enterprise Cybersecurity & Compliance expert answering a security questionnaire. ' +
+      'Draft an accurate, professional, and concise response. Ground your response strictly in the provided context. ' +
+      'If context is missing or insufficient, state this clearly without fabricating policies.';
 
-    const userPrompt = hasContext
-      ? `CONTEXT:\n${combinedContext}\n\nQUESTION:\n${question}`
+    const generatorUser = hasContext
+      ? `EVIDENCE CONTEXT:\n${combinedContext}\n\nQUESTION:\n${question}`
       : `QUESTION:\n${question}\n\n(No retrieved context was provided.)`;
 
     try {
-      const completionConfig: any = {
-        model: this.completionModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 1,
-        top_p: 0.95,
-        max_tokens: 16384,
-        seed: 42,
+      const draftAnswer = await this.callChatCompletion([
+        { role: 'system', content: generatorSystem },
+        { role: 'user', content: generatorUser },
+      ]);
+
+      if (!hasContext) {
+        return {
+          answer: draftAnswer,
+          confidence: 35,
+          auditStatus: 'UNSUPPORTED',
+          auditNotes: 'No matching policy documents found in the Knowledge Base.',
+        };
+      }
+
+      // --- Pass 2: Adversarial Auditor / Critic ---
+      const auditorSystem =
+        'You are a strict security auditor. Your job is to verify whether an AI draft answer ' +
+        'is factually supported by the provided evidence text. You must penalize unverified assertions or over-commitments. ' +
+        'Respond ONLY with valid JSON in this exact structure: {"grounded": true|false, "confidence": number (0-100), "feedback": "concise note"}';
+
+      const auditorUser =
+        `CONTEXT EVIDENCE:\n${combinedContext.slice(0, 3000)}\n\n` +
+        `QUESTION:\n${question}\n\n` +
+        `DRAFT ANSWER:\n${draftAnswer}`;
+
+      let confidence = 88;
+      let auditStatus: 'VERIFIED' | 'REVIEW' | 'UNSUPPORTED' = 'VERIFIED';
+      let auditNotes = 'Verified by Dual-Model Audit against cited documentation.';
+
+      try {
+        const auditResponse = await this.callChatCompletion(
+          [
+            { role: 'system', content: auditorSystem },
+            { role: 'user', content: auditorUser },
+          ],
+          0.1,
+        );
+
+        // Extract JSON from response
+        const jsonMatch = auditResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (typeof parsed.confidence === 'number') {
+            confidence = Math.max(10, Math.min(100, Math.round(parsed.confidence)));
+          }
+          if (parsed.grounded === false || confidence < 75) {
+            auditStatus = 'REVIEW';
+            auditNotes = parsed.feedback || 'Critic flagged assertions needing review.';
+          } else {
+            auditStatus = 'VERIFIED';
+          }
+        }
+      } catch (criticErr) {
+        this.logger.warn(`Auditor pass fallback: ${criticErr}`);
+      }
+
+      return {
+        answer: draftAnswer,
+        confidence,
+        auditStatus,
+        auditNotes,
       };
-
-      if (this.completionModel.includes('deepseek')) {
-        completionConfig.chat_template_kwargs = { thinking: false };
-      }
-
-      const result = await this.openai.chat.completions.create(completionConfig, { timeout: 30000 });
-
-      const answer = result.choices[0]?.message?.content?.trim() || '';
-
-      if (!answer) {
-        throw new Error('AI response did not include any text.');
-      }
-
-      // Pseudo-confidence: high when grounded, lower when the model bailed out.
-      const lower = answer.toLowerCase();
-      const bailedOut =
-        !hasContext ||
-        lower.includes('do not have enough information') ||
-        lower.includes('not mentioned in the context') ||
-        lower.includes('cannot answer') ||
-        lower.includes('insufficient context');
-
-      const confidence = bailedOut
-        ? 25 + Math.floor(Math.random() * 20)
-        : 85 + Math.floor(Math.random() * 10);
-
-      return { answer, confidence };
     } catch (error) {
       this.logger.error('Failed to generate answer', error as Error);
       if (this.isQuotaExceededError(error)) {

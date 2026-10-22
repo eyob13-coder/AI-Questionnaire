@@ -13,7 +13,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
 
   constructor(private readonly configService: ConfigService) {
-    const isDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
+    const rawDisabled = this.configService.get<string | boolean>('REDIS_DISABLED', false);
+    const isDisabled = String(rawDisabled).toLowerCase() === 'true';
     
     if (!isDisabled) {
       const redisUrl = this.configService.get<string>('REDIS_URL');
@@ -50,7 +51,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    const isDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
+    const rawDisabled = this.configService.get<string | boolean>('REDIS_DISABLED', false);
+    const isDisabled = String(rawDisabled).toLowerCase() === 'true';
     if (isDisabled) {
       this.logger.log('⚠️  Redis disabled — falling back to DB-only mode');
       return;

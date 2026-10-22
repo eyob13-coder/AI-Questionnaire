@@ -5,6 +5,28 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './prisma/prisma-exception.filter';
+// Handle local dev Redis disconnection noise gracefully
+process.on('uncaughtException', (err: any) => {
+  const isRedisError =
+    err?.code === 'ECONNREFUSED' ||
+    err?.code === 'ETIMEDOUT' ||
+    (Array.isArray(err?.errors) &&
+      err.errors.some((e: any) => e?.port === 6379 || e?.code === 'ECONNREFUSED' || e?.code === 'ETIMEDOUT'));
+
+  if (isRedisError) return;
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  const isRedisError =
+    reason?.code === 'ECONNREFUSED' ||
+    reason?.code === 'ETIMEDOUT' ||
+    (Array.isArray(reason?.errors) &&
+      reason.errors.some((e: any) => e?.port === 6379 || e?.code === 'ECONNREFUSED' || e?.code === 'ETIMEDOUT'));
+
+  if (isRedisError) return;
+  console.error('Unhandled Rejection:', reason);
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,9 +43,8 @@ async function bootstrap() {
   console.log(`CORS Origin: ${frontendUrl}`);
 
   // CORS - allow the Next.js frontend to send cookies cross-origin.
-  // In Replit dev, the browser hits `/v1/*` on the same origin and Next.js
-  // rewrites server-side to localhost:3001, so CORS rarely matters here, but
-  // we keep this permissive for direct calls (Swagger docs, manual curl, etc.)
+  // In local dev, Next.js (port 3000) rewrites server-side to the NestJS backend (port 4000),
+  // but we keep CORS enabled for direct API calls, Swagger docs, and tooling.
   app.enableCors({
     origin: true,
     credentials: true,
@@ -48,13 +69,13 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Vaultix API')
     .setDescription('AI-powered security questionnaire autofill API')
-    .setVersion('0.1.0')
+    .setVersion('1.0.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = config.get<number>('PORT', 3001);
+  const port = config.get<number>('PORT', 4000);
   try {
     await app.listen(port);
   } catch (error) {

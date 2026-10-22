@@ -116,7 +116,7 @@ npm run dev
 
 This will start:
 - **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:3001
+- **Backend**: http://localhost:4000
 
 **Individual commands:**
 - Frontend only: `npm run dev:frontend`
@@ -164,7 +164,7 @@ This will spin up:
 
 Once the backend is running, access the Swagger API documentation at:
 ```
-http://localhost:3001/api
+http://localhost:4000/api/docs
 ```
 
 ## Features in Detail

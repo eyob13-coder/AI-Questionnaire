@@ -13,15 +13,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import {
-  AlertCircle,
-  BookOpen,
-  FileSpreadsheet,
-  Loader2,
-  ScrollText,
-  Search,
-  Users,
-} from "lucide-react";
+import { FontAwesomeIcon, byPrefixAndName, type IconDefinition } from "@/lib/fontawesome";
 import { formatRelativeTime } from "@/lib/format";
 import {
   useDashboardSearch,
@@ -34,28 +26,28 @@ const resultConfig: Record<
   DashboardSearchResultType,
   {
     label: string;
-    Icon: typeof Search;
+    icon: IconDefinition;
     badgeClass: string;
   }
 > = {
   questionnaire: {
     label: "Questionnaire",
-    Icon: FileSpreadsheet,
+    icon: byPrefixAndName.fans["table-cells"],
     badgeClass: "text-brand bg-brand/10 border-brand/20",
   },
   document: {
     label: "Document",
-    Icon: BookOpen,
+    icon: byPrefixAndName.fans["book-open"],
     badgeClass: "text-success bg-success/10 border-success/20",
   },
   member: {
     label: "Member",
-    Icon: Users,
+    icon: byPrefixAndName.fans["users"],
     badgeClass: "text-info bg-info/10 border-info/20",
   },
   activity: {
     label: "Activity",
-    Icon: ScrollText,
+    icon: byPrefixAndName.fans["scroll"],
     badgeClass: "text-warning bg-warning/10 border-warning/20",
   },
 };
@@ -205,8 +197,8 @@ export default function DashboardSearch() {
 
   return (
     <div ref={containerRef} className="relative hidden sm:block">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.1] transition-colors w-72 lg:w-80">
-        <Search className="w-4 h-4 text-light-3" />
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-dark-3/60 border border-dark-4 hover:border-dark-5 transition-colors w-72 lg:w-80">
+        <FontAwesomeIcon icon={byPrefixAndName.fans["magnifying-glass"]} className="w-3.5 h-3.5 text-light-3" />
         <input
           ref={inputRef}
           type="text"
@@ -234,13 +226,13 @@ export default function DashboardSearch() {
             }
           }}
           onKeyDown={handleInputKeyDown}
-          className="bg-transparent text-sm text-light placeholder-light-3 outline-none w-full disabled:cursor-not-allowed"
+          className="bg-transparent text-xs text-light placeholder-light-3 outline-none w-full disabled:cursor-not-allowed"
         />
         {isLoading ? (
-          <Loader2 className="w-3.5 h-3.5 text-light-4 animate-spin" />
+          <FontAwesomeIcon icon={byPrefixAndName.fans["spinner"]} className="w-3.5 h-3.5 text-light-4 animate-spin" />
         ) : (
-          <kbd className="hidden lg:inline-block text-[10px] text-light-4 bg-dark-4 px-1.5 py-0.5 rounded font-mono">
-            Ctrl K
+          <kbd className="hidden lg:inline-flex items-center text-[10px] text-light-4 bg-dark-4/80 border border-dark-5 px-1.5 py-0.5 rounded font-mono">
+            ⌘K
           </kbd>
         )}
       </div>
@@ -272,7 +264,7 @@ export default function DashboardSearch() {
 
             {error && (
               <div className="mx-4 mt-4 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs text-warning flex items-start gap-2">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <FontAwesomeIcon icon={byPrefixAndName.fans["circle-exclamation"]} className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <p>{error}</p>
               </div>
             )}
@@ -294,7 +286,7 @@ export default function DashboardSearch() {
               ) : visibleItems.length === 0 ? (
                 <div className="px-4 py-12 text-center">
                   <div className="mx-auto w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                    <Search className="w-5 h-5 text-light-4" />
+                    <FontAwesomeIcon icon={byPrefixAndName.fans["magnifying-glass"]} className="w-5 h-5 text-light-4" />
                   </div>
                   <p className="text-sm font-medium text-light mt-4">
                     {trimmedQuery ? `No results for "${trimmedQuery}"` : "Nothing indexed yet"}
@@ -309,7 +301,6 @@ export default function DashboardSearch() {
                 <div className="space-y-2">
                   {visibleItems.map((item, index) => {
                     const config = resultConfig[item.type];
-                    const Icon = config.Icon;
                     const isActive = index === selectedIndex;
 
                     return (
@@ -322,7 +313,7 @@ export default function DashboardSearch() {
                         onMouseEnter={() => setActiveIndex(index)}
                         onClick={() => handleSelect(item)}
                         className={clsx(
-                          "w-full text-left flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors",
+                          "w-full text-left flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors cursor-pointer",
                           isActive
                             ? "border-brand/25 bg-brand/[0.08]"
                             : "border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.04]",
@@ -334,7 +325,7 @@ export default function DashboardSearch() {
                             config.badgeClass,
                           )}
                         >
-                          <Icon className="w-4 h-4" />
+                          <FontAwesomeIcon icon={config.icon} className="w-4 h-4" />
                         </div>
 
                         <div className="min-w-0 flex-1">

@@ -114,7 +114,7 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
                 Your Knowledge Base is empty
               </h3>
               <p className="text-sm text-amber-500/80 mt-1 leading-relaxed">
-                Vaultix AI relies on your uploaded security policies and documents to answer questionnaires accurately. Without them, the AI won't be able to provide answers.
+                Vaultix AI relies on your uploaded security policies and documents to answer questionnaires accurately. Without them, the AI won&apos;t be able to provide answers.
               </p>
             </div>
           </div>
@@ -136,48 +136,70 @@ function NewQuestionnaireContent({ workspaceId }: { workspaceId: string }) {
       </motion.div>
 
       {!file ? (
-        <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById("file-input")?.click()}
-          className={`relative rounded-2xl border-2 border-dashed p-12 text-center transition-all duration-300 cursor-pointer ${dragActive
-            ? "border-brand bg-brand/[0.04] scale-[1.01]"
-            : "border-white/[0.08] bg-dark-3/30 hover:border-white/[0.15]"
-            }`}
-        >
-          <input
-            id="file-input"
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) validateAndSetFile(f);
-            }}
-            className="hidden"
-          />
+        <>
           <div
-            className={`w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center ${dragActive ? "bg-brand/15" : "bg-white/[0.04]"
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById("file-input")?.click()}
+            className={`relative rounded-2xl border-2 border-dashed p-12 text-center transition-all duration-300 cursor-pointer ${dragActive
+              ? "border-brand bg-brand/[0.04] scale-[1.01]"
+              : "border-white/[0.08] bg-dark-3/30 hover:border-white/[0.15]"
               }`}
           >
-            <Upload
-              className={`w-7 h-7 ${dragActive ? "text-brand" : "text-light-3"
-                }`}
+            <input
+              id="file-input"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) validateAndSetFile(f);
+              }}
+              className="hidden"
             />
+            <div
+              className={`w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center ${dragActive ? "bg-brand/15" : "bg-white/[0.04]"
+                }`}
+            >
+              <Upload
+                className={`w-7 h-7 ${dragActive ? "text-brand" : "text-light-3"
+                  }`}
+              />
+            </div>
+            <p className="text-base font-medium text-light mb-1.5">
+              {dragActive
+                ? "Drop your file here"
+                : "Drag & drop your questionnaire"}
+            </p>
+            <p className="text-sm text-light-3 mb-4">or click to browse files</p>
+            <div className="flex items-center justify-center gap-3 text-xs text-light-4">
+              <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.xlsx</span>
+              <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.csv</span>
+              <span>Max 25MB</span>
+            </div>
           </div>
-          <p className="text-base font-medium text-light mb-1.5">
-            {dragActive
-              ? "Drop your file here"
-              : "Drag & drop your questionnaire"}
-          </p>
-          <p className="text-sm text-light-3 mb-4">or click to browse files</p>
-          <div className="flex items-center justify-center gap-3 text-xs text-light-4">
-            <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.xlsx</span>
-            <span className="px-2.5 py-1 rounded-full bg-dark-4/50">.csv</span>
-            <span>Max 25MB</span>
+
+          {/* Round-Trip Formatting Guarantee Banner */}
+          <div className="rounded-xl border border-brand/20 bg-brand/[0.03] p-4 flex items-start gap-3.5">
+            <div className="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle2 className="w-4 h-4 text-brand" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-light">
+                  Round-Trip Excel Preservation
+                </h4>
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">
+                  Zero Copy-Paste
+                </span>
+              </div>
+              <p className="text-xs text-light-3 mt-1 leading-relaxed">
+                Upload multi-tab spreadsheets with complex client styling. Vaultix automatically detects question columns and preserves 100% of the original Excel layout, merged cells, custom fonts, and dropdown formulas — populating answers and verified citations directly back into their file.
+              </p>
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="rounded-2xl border border-white/[0.08] bg-dark-3/30 p-6">
           <div className="flex items-center gap-4">

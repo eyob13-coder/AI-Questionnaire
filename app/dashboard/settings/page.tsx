@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Shield, AlertTriangle, Loader2, User, Trash2 } from "lucide-react";
 import { apiPatch, apiDelete, formatApiError } from "@/lib/api";
 import { useWorkspace } from "@/lib/workspace";
-import { useSession, authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import {
   WorkspaceGate,
@@ -15,6 +16,7 @@ import {
 function SettingsContent() {
   const { workspace, refresh } = useWorkspace();
   const { data: session } = useSession();
+  const updateProfile = useAuthStore((s) => s.updateProfile);
   const router = useRouter();
 
   // Workspace state
@@ -65,8 +67,12 @@ function SettingsContent() {
     setSavingPersonal(true);
     setError(null);
     try {
-      await authClient.updateUser({ name: personalName });
-      setPersonalSavedAt(Date.now());
+      const res = await updateProfile({ name: personalName });
+      if (!res.success) {
+        setError(res.error || "Failed to update personal profile");
+      } else {
+        setPersonalSavedAt(Date.now());
+      }
     } catch (err) {
       setError("Failed to update personal profile");
     } finally {

@@ -10,12 +10,14 @@ import {
   FileText,
   AlertTriangle,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import api, { apiGet } from "@/lib/api";
+import { apiGet } from "@/lib/api";
 import { formatDate } from "@/lib/format";
+import { useQuestionnaireStore } from "@/lib/store";
 import {
   WorkspaceGate,
   PageError,
@@ -49,6 +51,7 @@ interface QuestionnaireDetails {
   totalQuestions: number;
   createdAt: string;
   questions: Question[];
+  roundTripPreserved?: boolean;
 }
 
 const statusFilters = [
@@ -140,34 +143,19 @@ function QuestionnaireContent({
     };
   }, [workspaceId, questionnaireId]);
 
+  const exportQuestionnaireAction = useQuestionnaireStore((s) => s.exportQuestionnaire);
+
   const handleExport = async () => {
     if (!data || exporting) return;
     setExporting(true);
 
     try {
-      const response = await api.get(
-        `/workspaces/${workspaceId}/questionnaires/${questionnaireId}/export`,
-        { responseType: "blob" },
-      );
-
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-
-      // Extract filename from header or use fallback
-      const contentDisposition = response.headers["content-disposition"];
-      let fileName = `${data.name}_exported.xlsx`;
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (fileNameMatch?.[1]) fileName = fileNameMatch[1];
+      const res = await exportQuestionnaireAction(questionnaireId, data.name);
+      if (!res.success) {
+        toast.error("Export failed", {
+          description: res.error || "We couldn't export the questionnaire. Please try again.",
+        });
       }
-
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Export failed", e);
       toast.error("Export failed", {
@@ -218,9 +206,17 @@ function QuestionnaireContent({
 
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
-            <h2 className="font-heading text-xl sm:text-2xl font-bold">
-              {data.name}
-            </h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-heading text-xl sm:text-2xl font-bold">
+                {data.name}
+              </h2>
+              {data.roundTripPreserved && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  Round-Trip Preserved
+                </span>
+              )}
+            </div>
             <p className="text-sm text-light-3 mt-1 font-mono">
               {data.fileName} · Created {formatDate(data.createdAt)}
             </p>
@@ -235,14 +231,23 @@ function QuestionnaireContent({
             <button
               onClick={handleExport}
               disabled={exporting || isGenerating}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-brand hover:bg-brand-hover disabled:bg-brand/50 rounded-full transition-all disabled:cursor-not-allowed cursor-pointer"
+              title={
+                data.roundTripPreserved
+                  ? "Exports directly into the original spreadsheet with all formatting, styles, and formulas preserved"
+                  : "Export questionnaire to Excel"
+              }
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-brand hover:bg-brand-hover disabled:bg-brand/50 rounded-full transition-all disabled:cursor-not-allowed cursor-pointer shadow-md shadow-brand/20"
             >
               {exporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Download className="w-3.5 h-3.5 " />
+                <Download className="w-3.5 h-3.5" />
               )}
-              {exporting ? "Exporting..." : "Export"}
+              {exporting
+                ? "Exporting..."
+                : data.roundTripPreserved
+                  ? "Export Original (Preserved)"
+                  : "Export to Excel"}
             </button>
           </div>
         </div>
@@ -339,31 +344,48 @@ function QuestionnaireContent({
                 <p className="text-sm text-light-2 leading-relaxed line-clamp-2">
                   {answerText}
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-8 h-1.5 rounded-full bg-dark-4 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${confidenceBg(conf)}`}
-                      style={{ width: `${conf}%` }}
-                    />
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-8 h-1.5 rounded-full bg-dark-4 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${confidenceBg(conf)}`}
+                        style={{ width: `${conf}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`text-xs font-mono font-semibold ${confidenceColor(
+                        conf,
+                      )}`}
+                    >
+                      {conf}%
+                    </span>
                   </div>
-                  <span
-                    className={`text-xs font-mono font-semibold ${confidenceColor(
-                      conf,
-                    )}`}
-                  >
-                    {conf}%
-                  </span>
+                  {conf >= 75 && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                      Audited
+                    </span>
+                  )}
                 </div>
                 <div>{statusBadge(row.status)}</div>
               </div>
 
-              {expandedRow === row.id && row.citations.length > 0 && (
-                <div className="px-5 pb-4 lg:pl-[64px]">
-                  <div className="rounded-xl bg-dark-3/40 border border-white/[0.06] p-4 space-y-3">
-                    <h4 className="text-xs font-semibold text-light-3 uppercase tracking-wider flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5" />
-                      Citations ({row.citations.length})
-                    </h4>
+              {expandedRow === row.id && (
+                <div className="px-5 pb-4 lg:pl-[64px] space-y-3">
+                  {conf >= 75 && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>
+                        <strong>Verified by Dual-Model Audit:</strong> Generator draft was verified by the adversarial auditor against uploaded policies ({conf}% grounded confidence).
+                      </span>
+                    </div>
+                  )}
+                  {row.citations.length > 0 && (
+                    <div className="rounded-xl bg-dark-3/40 border border-white/[0.06] p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-light-3 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5" />
+                        Citations ({row.citations.length})
+                      </h4>
                     {row.citations.map((cit, ci) => (
                       <div key={cit.id} className="flex items-start gap-3 text-xs">
                         <span className="text-brand font-mono shrink-0">
@@ -388,6 +410,7 @@ function QuestionnaireContent({
                       </div>
                     ))}
                   </div>
+                )}
                 </div>
               )}
             </div>

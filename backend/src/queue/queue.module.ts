@@ -1,6 +1,7 @@
-import { Module, Logger } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
+import { Module, Logger, OnModuleInit, Inject } from '@nestjs/common';
+import { BullModule, getQueueToken } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
+import { Queue } from 'bullmq';
 import { DocumentProcessingProcessor } from './processors/document-processing.processor';
 import { QuestionnaireGenerationProcessor } from './processors/questionnaire-generation.processor';
 import { RagModule } from '../rag/rag.module';
@@ -15,10 +16,11 @@ const logger = new Logger('QueueModule');
     RagModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
-        const isDisabled = configService.get<boolean>('REDIS_DISABLED', false);
-        
+        const rawDisabled = configService.get<string | boolean>('REDIS_DISABLED', false);
+        const isDisabled = String(rawDisabled).toLowerCase() === 'true';
+
         if (isDisabled) {
-          logger.warn('Redis is disabled - BullMQ job queues will not work');
+          logger.warn('⚠️  Redis is disabled — BullMQ job queues will not connect');
         }
 
         const redisUrl = configService.get<string>('REDIS_URL');
@@ -28,18 +30,19 @@ const logger = new Logger('QueueModule');
           try {
             const parsed = new URL(redisUrl);
             connectionConfig = {
-              host: parsed.hostname,
+              host: parsed.hostname === 'localhost' ? '127.0.0.1' : parsed.hostname,
               port: Number.parseInt(parsed.port || '6379', 10),
               password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
               username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
               tls: parsed.protocol === 'rediss:' ? {} : undefined,
             };
           } catch {
-            connectionConfig = { host: 'localhost', port: 6379 };
+            connectionConfig = { host: '127.0.0.1', port: 6379 };
           }
         } else {
+          const rawHost = configService.get<string>('REDIS_HOST', '127.0.0.1');
           connectionConfig = {
-            host: configService.get<string>('REDIS_HOST', 'localhost'),
+            host: rawHost === 'localhost' ? '127.0.0.1' : rawHost,
             port: configService.get<number>('REDIS_PORT', 6379),
             password: configService.get<string>('REDIS_PASSWORD', '') || undefined,
           };
@@ -50,13 +53,13 @@ const logger = new Logger('QueueModule');
             ...connectionConfig,
             enableOfflineQueue: false,
             maxRetriesPerRequest: null,
-            // Aggressive retry backoff to fail fast if Redis is down
             retryStrategy: (times: number) => {
-              if (times > 3) return null;
-              return Math.min(times * 100, 300);
+              if (isDisabled) return null;
+              if (times > 2) return null;
+              return Math.min(times * 500, 2000);
             },
-            connectTimeout: 2000,
-            commandTimeout: 2000,
+            connectTimeout: 1000,
+            commandTimeout: 1000,
           },
         };
       },
@@ -70,4 +73,20 @@ const logger = new Logger('QueueModule');
   providers: [DocumentProcessingProcessor, QuestionnaireGenerationProcessor],
   exports: [BullModule, QuestionnaireGenerationProcessor, DocumentProcessingProcessor],
 })
-export class QueueModule {}
+export class QueueModule implements OnModuleInit {
+  constructor(
+    @Inject(getQueueToken(DOCUMENT_PROCESSING_QUEUE))
+    private readonly docQueue: Queue,
+    @Inject(getQueueToken(QUESTIONNAIRE_GENERATION_QUEUE))
+    private readonly questQueue: Queue,
+  ) {}
+
+  onModuleInit() {
+    this.docQueue.on('error', () => {
+      // Swallowed in local dev when Redis is offline
+    });
+    this.questQueue.on('error', () => {
+      // Swallowed in local dev when Redis is offline
+    });
+  }
+}

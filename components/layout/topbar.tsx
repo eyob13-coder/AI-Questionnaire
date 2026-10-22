@@ -1,14 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Menu, Sun, Moon } from "lucide-react";
+import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import Link from "next/link";
-import { VaultixIcon } from "@/components/ui/vaultix-icon";
+import Image from "next/image";
 import { useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardSearch from "@/components/layout/dashboard-search";
 import NotificationsMenu from "@/components/layout/notifications-menu";
 import { useSession } from "@/lib/auth-client";
+import { useAuthStore } from "@/lib/store";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -60,7 +61,8 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "dark");
   const { data: sessionData } = useSession();
-  const user = sessionData?.user;
+  const storeUser = useAuthStore((s) => s.user);
+  const user = storeUser || sessionData?.user;
   const displayName =
     user?.name?.trim() ||
     user?.email?.split("@")[0] ||
@@ -90,20 +92,20 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06]">
-      <div className="absolute inset-0 bg-dark/80 backdrop-blur-xl" />
+    <header className="sticky top-0 z-40 border-b border-dark-4">
+      <div className="absolute inset-0 bg-dark-2/80 backdrop-blur-xl" />
       <div className="relative flex items-center justify-between h-16 px-4 sm:px-6">
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 text-light-3 hover:text-light rounded-lg hover:bg-white/[0.04] transition"
+            className="lg:hidden p-2 text-light-3 hover:text-light rounded-lg hover:bg-white/[0.04] transition cursor-pointer"
           >
-            <Menu className="w-5 h-5" />
+            <FontAwesomeIcon icon={byPrefixAndName.fans["bars"]} className="w-4 h-4" />
           </button>
 
           <Link href="/dashboard" className="lg:hidden flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-orange-600 flex items-center justify-center">
-              <VaultixIcon className="w-4 h-4" />
+            <div className="relative w-7 h-7 flex-shrink-0">
+              <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
             </div>
           </Link>
 
@@ -112,13 +114,13 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <DashboardSearch />
 
           <button
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.08] bg-dark-4/60 hover:bg-dark-5/80 text-light-3 hover:text-light transition-all duration-200 hover:border-white/[0.16] group overflow-hidden"
+            className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-dark-4 bg-dark-3/60 hover:bg-dark-4 text-light-3 hover:text-light transition-all duration-200 hover:border-dark-5 group overflow-hidden cursor-pointer"
           >
             <AnimatePresence mode="wait" initial={false}>
               {theme === "dark" ? (
@@ -130,7 +132,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  <Sun className="w-4 h-4" />
+                  <FontAwesomeIcon icon={byPrefixAndName.fans["sun"]} className="w-3.5 h-3.5" />
                 </motion.span>
               ) : (
                 <motion.span
@@ -141,7 +143,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  <Moon className="w-4 h-4" />
+                  <FontAwesomeIcon icon={byPrefixAndName.fans["moon"]} className="w-3.5 h-3.5" />
                 </motion.span>
               )}
             </AnimatePresence>

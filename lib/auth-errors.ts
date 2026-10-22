@@ -52,7 +52,7 @@ export function formatAuthError(
   }
 
   if (messageContainsNetworkHint(message) || authError.code === "ERR_NETWORK") {
-    return "We can't reach the server right now. Check your connection and make sure the backend is running.";
+    return "Unable to connect to the server. Please check your internet connection and try again.";
   }
 
   if (typeof message === "string" && message.trim().length > 0) {

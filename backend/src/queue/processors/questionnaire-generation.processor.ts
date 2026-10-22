@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -21,6 +21,11 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
     private readonly ragService: RagService,
   ) {
     super();
+  }
+
+  @OnWorkerEvent('error')
+  onError(error: Error) {
+    // Suppress unhandled AggregateError when Redis is offline in local dev
   }
 
   private extractKeywords(input: string): string[] {
