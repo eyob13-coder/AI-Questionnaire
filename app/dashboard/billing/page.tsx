@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuestionnaireStore } from "@/lib/store";
+import { useWorkspace } from "@/lib/workspace";
 import {
   WorkspaceGate,
   PageError,
@@ -30,6 +31,7 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const { refresh } = useWorkspace();
 
   const billingInfo = useQuestionnaireStore((s) => s.billingInfo);
   const fetchBillingInfo = useQuestionnaireStore((s) => s.fetchBillingInfo);
@@ -46,6 +48,9 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
     (async () => {
       try {
         await fetchBillingInfo(workspaceId);
+        if (success) {
+          await refresh();
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load billing details");
@@ -57,7 +62,7 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, fetchBillingInfo]);
+  }, [workspaceId, fetchBillingInfo, success, refresh]);
 
   const handleCheckout = async (purchaseType: "SINGLE_PASS" | "PRO_SUBSCRIPTION") => {
     setCheckoutLoading(purchaseType);
@@ -98,6 +103,7 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
   }
 
   const isPro = Boolean(billingInfo.isPro || billingInfo.plan === "PRO");
+  const exportCredits = billingInfo.exportCredits ?? 0;
   const limits = billingInfo.usage?.limits;
   const questionsLimit = limits?.questions ?? (billingInfo.usage as any)?.questionsLimit ?? 250;
   const questionsCount = billingInfo.usage?.questionsThisMonth ?? (billingInfo.usage as any)?.questionsUsed ?? 0;
@@ -117,10 +123,16 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
               className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                 isPro
                   ? "bg-brand/15 text-brand"
+                  : exportCredits > 0
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25"
                   : "bg-dark-3 text-light-3 border border-dark-4"
               }`}
             >
-              {isPro ? "Pro Subscription" : "Free Plan"}
+              {isPro
+                ? "Pro Subscription"
+                : exportCredits > 0
+                ? `Starter · ${exportCredits} Pass Credit${exportCredits > 1 ? "s" : ""}`
+                : "Free Plan"}
             </span>
           </div>
           <p className="text-sm text-light-3">
@@ -180,10 +192,18 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
                 <Zap className="w-4 h-4 text-brand" />
               </div>
               <p className="font-heading text-xl font-bold text-light">
-                {isPro ? "Pro Unlimited" : "Free Plan"}
+                {isPro
+                  ? "Pro Unlimited"
+                  : exportCredits > 0
+                  ? "Starter (Pay-As-You-Go)"
+                  : "Free Plan"}
               </p>
               <p className="text-xs text-light-4 mt-1 font-mono">
-                {isPro ? "$149/mo · Recurring" : "Upgrade for unlimited exports"}
+                {isPro
+                  ? "$149/mo · Recurring"
+                  : exportCredits > 0
+                  ? `${exportCredits} pass credit${exportCredits > 1 ? "s" : ""} available`
+                  : "Upgrade for unlimited exports"}
               </p>
             </div>
             <div className="pt-4 border-t border-dark-4/60 mt-4 flex items-center justify-between">
@@ -283,9 +303,15 @@ function BillingContent({ workspaceId }: { workspaceId: string }) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-heading text-xl font-bold text-light">Starter</h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-dark-3 text-light-3 border border-dark-4">
-                  Pay-As-You-Go
-                </span>
+                {exportCredits > 0 && !isPro ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                    Active ({exportCredits} Pass{exportCredits > 1 ? "es" : ""})
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-dark-3 text-light-3 border border-dark-4">
+                    Pay-As-You-Go
+                  </span>
+                )}
               </div>
               <p className="text-xs text-light-3">
                 For small teams getting started or single deal reviews

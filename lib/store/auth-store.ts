@@ -46,7 +46,7 @@ interface AuthState {
   sendOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
-  updateProfile: (data: { name?: string; company?: string; image?: string }) => Promise<{ success: boolean; user?: User; error?: string }>;
+  updateProfile: (data: { name?: string; email?: string; company?: string; image?: string | null }) => Promise<{ success: boolean; user?: User; error?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({

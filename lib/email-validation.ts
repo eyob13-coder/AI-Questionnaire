@@ -120,3 +120,17 @@ export function validateEmail(rawEmail: string): EmailValidationResult {
 export function isValidEmail(email: string): boolean {
   return validateEmail(email).valid;
 }
+
+export function maskEmail(rawEmail: string): string {
+  const email = (rawEmail || "").trim();
+  if (!email || !email.includes("@")) return email;
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  if (local.length <= 2) {
+    return `${local[0]}*@${domain}`;
+  }
+  const first = local[0];
+  const last = local[local.length - 1];
+  const asterisks = "*".repeat(Math.max(3, Math.min(6, local.length - 2)));
+  return `${first}${asterisks}${last}@${domain}`;
+}

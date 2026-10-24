@@ -66,7 +66,9 @@
 }
 
 /* ───────────── Base ───────────── */
-*, ::before, ::after {
+*,
+::before,
+::after {
   box-sizing: border-box;
   border-color: #27272A;
 }
@@ -258,11 +260,59 @@ body {
   animation: shimmer 2s infinite;
 }
 
+@keyframes shimmer-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.shimmer-skeleton::after {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.03) 75%,
+    transparent 100%
+  );
+  animation: shimmer-wave 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  content: "";
+  pointer-events: none;
+}
+
+[data-theme="light"] .shimmer-skeleton {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .shimmer-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.02) 25%,
+    rgba(0, 0, 0, 0.07) 50%,
+    rgba(0, 0, 0, 0.02) 75%,
+    transparent 100%
+  );
+}
+
 /* 90-degree opposite direction marquees */
 @keyframes marquee-vertical-up {
   0% {
     transform: translateY(0);
   }
+
   100% {
     transform: translateY(-50%);
   }
@@ -272,6 +322,7 @@ body {
   0% {
     transform: translateY(-50%);
   }
+
   100% {
     transform: translateY(0);
   }

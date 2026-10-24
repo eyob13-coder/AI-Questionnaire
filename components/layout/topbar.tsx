@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardSearch from "@/components/layout/dashboard-search";
@@ -95,21 +94,17 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     <header className="sticky top-0 z-40 border-b border-dark-4">
       <div className="absolute inset-0 bg-dark-2/80 backdrop-blur-xl" />
       <div className="relative flex items-center justify-between h-16 px-4 sm:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 text-light-3 hover:text-light rounded-lg hover:bg-white/[0.04] transition cursor-pointer"
+            aria-label="Open navigation menu"
           >
             <FontAwesomeIcon icon={byPrefixAndName.fans["bars"]} className="w-4 h-4" />
           </button>
 
-          <Link href="/dashboard" className="lg:hidden flex items-center gap-2">
-            <div className="relative w-7 h-7 flex-shrink-0">
-              <Image src="/logo.svg" alt="Vaultix" fill className="object-contain" priority />
-            </div>
-          </Link>
-
-          <h1 className="font-heading text-lg font-semibold text-light">
+          {/* Page Title: hidden on mobile (<sm) per user request, visible on tablet/desktop */}
+          <h1 className="hidden sm:block font-heading text-lg font-semibold text-light">
             {getTitle()}
           </h1>
         </div>
@@ -152,18 +147,25 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
           <NotificationsMenu />
 
-          {user?.image ? (
-            <img
-              src={user.image}
-              alt={displayName}
-              className="lg:hidden w-8 h-8 rounded-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="lg:hidden w-8 h-8 rounded-full bg-gradient-to-br from-brand/30 to-brand/10 flex items-center justify-center text-xs font-bold text-brand">
-              {userInitial}
-            </div>
-          )}
+          {/* Profile Section: Click redirects to profile settings page */}
+          <Link
+            href="/dashboard/settings"
+            className="lg:hidden relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/10 hover:ring-brand/50 active:scale-95 transition-all cursor-pointer"
+            title="Profile & Settings"
+          >
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt={displayName}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-brand/30 to-brand/10 border border-brand/20 flex items-center justify-center text-xs font-bold text-brand">
+                {userInitial}
+              </div>
+            )}
+          </Link>
         </div>
       </div>
     </header>

@@ -37,14 +37,29 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { name, company, image } = body;
+    const { name, company, image, email } = body;
+
+    if (email && typeof email === "string" && email.trim().toLowerCase() !== session.user.email.toLowerCase()) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+      if (existing && existing.id !== session.user.id) {
+        return NextResponse.json({ error: "This email address is already in use by another account." }, { status: 400 });
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         ...(name !== undefined ? { name: name.trim() } : {}),
         ...(company !== undefined ? { company: company.trim() } : {}),
-        ...(image !== undefined ? { image } : {}),
+        ...(image !== undefined ? { image: image ? image.trim() : null } : {}),
+        ...(email !== undefined ? { email: email.trim().toLowerCase() } : {}),
       },
       select: {
         id: true,

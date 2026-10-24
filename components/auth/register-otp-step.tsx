@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import { useAuthStore } from "@/lib/store";
 import { toast } from "sonner";
+import { maskEmail } from "@/lib/email-validation";
 
 interface RegisterOtpStepProps {
   email: string;
@@ -53,7 +54,7 @@ export function RegisterOtpStep({ email, onSuccess, onBack }: RegisterOtpStepPro
     try {
       const res = await sendOtp(email);
       if (res.success) {
-        toast.success("New code sent", { description: `Check ${email}` });
+        toast.success("New code sent", { description: `Check ${maskEmail(email)}` });
         setResendCooldown(60);
       } else {
         setError(res.error || "Could not resend code.");
@@ -71,7 +72,7 @@ export function RegisterOtpStep({ email, onSuccess, onBack }: RegisterOtpStepPro
         </div>
         <h2 className="font-heading text-2xl font-bold text-light">Check your inbox</h2>
         <p className="text-light-3 text-xs sm:text-sm mt-1.5">
-          We sent a 6-digit verification code to <span className="text-brand font-medium">{email}</span>.
+          We sent a 6-digit verification code to <span className="text-brand font-medium">{maskEmail(email)}</span>.
         </p>
       </div>
 

@@ -9,6 +9,7 @@ import {
   otpEmailTemplate,
   passwordResetEmailTemplate,
 } from "@/lib/mailer";
+import { maskEmail } from "@/lib/email-validation";
 
 function parseSslConfig(databaseUrl: string): {
   connectionString: string;
@@ -184,9 +185,9 @@ export const auth = betterAuth({
       sendVerificationOTP: async ({ email, otp, type }) => {
         const tpl = otpEmailTemplate(otp, type);
         
-        // Log the OTP explicitly so the user can test locally without SMTP setup!
+        // Log the OTP explicitly with masked email
         console.log(`\n=========================================`);
-        console.log(`[auth] OTP for ${email}: ${otp}`);
+        console.log(`[auth] OTP for ${maskEmail(email)}: ${otp}`);
         console.log(`=========================================\n`);
         
         await sendEmail({

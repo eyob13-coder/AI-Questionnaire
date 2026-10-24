@@ -34,17 +34,17 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="min-h-screen bg-dark flex flex-col lg:flex-row relative overflow-hidden select-none">
+    <div className="h-[100dvh] max-h-[100dvh] bg-dark flex flex-col lg:flex-row relative overflow-hidden select-none">
       {/* ── Ambient Background Glows ── */}
       <div className="absolute inset-0 bg-grid opacity-[0.06] pointer-events-none" />
       <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-brand/[0.08] blur-[120px] pointer-events-none" />
       <div className="absolute -bottom-32 right-0 w-[450px] h-[450px] rounded-full bg-brand/[0.05] blur-[140px] pointer-events-none" />
 
       {/* ── Left Showcase Panel (Desktop) ── */}
-      <aside className="hidden lg:flex flex-col justify-between w-[480px] xl:w-[540px] shrink-0 relative bg-dark-2/80 backdrop-blur-2xl border-r border-white/[0.06] p-10 xl:p-14 z-10">
+      <aside className="hidden lg:flex flex-col justify-between w-[440px] xl:w-[480px] shrink-0 h-full max-h-[100dvh] relative bg-dark-2/80 backdrop-blur-2xl border-r border-white/[0.06] p-8 xl:p-10 z-10 overflow-hidden">
         {/* Brand Header */}
         <div>
-          <VaultixLogo size="lg" priority />
+          <VaultixLogo size="md" priority />
         </div>
 
         {/* Value Proposition & Visual Preview */}
@@ -110,27 +110,22 @@ export default async function AuthLayout({
           </div>
         </div>
 
-        {/* Bottom Social Proof & Trust */}
-        <div className="pt-6 border-t border-white/[0.06] flex items-center justify-between text-xs text-light-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-brand/20 border border-brand/30 flex items-center justify-center text-[10px] font-bold text-brand">
-              PS
-            </div>
-            <div>
-              <p className="font-semibold text-light text-xs">Priya Sharma</p>
-              <p className="text-[11px] text-light-4">Head of Security · CloudKin</p>
-            </div>
-          </div>
-          <span className="text-[11px] font-mono text-light-4">
+        {/* Bottom Security & Trust Badge */}
+        <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-light-4">
+          <span className="text-[11px] font-mono text-light-4 flex items-center gap-1.5">
+            <FontAwesomeIcon icon={byPrefixAndName.fans["shield-halved"]} className="w-3 h-3 text-brand" />
             AES-256 Encrypted
+          </span>
+          <span className="text-[11px] font-mono text-light-4">
+            SOC 2 Type II Certified
           </span>
         </div>
       </aside>
 
       {/* ── Right Content Area (Mobile & Desktop) ── */}
-      <main className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 relative z-10 overflow-y-auto">
+      <main className="flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-8 xl:p-10 relative z-10 h-full max-h-[100dvh] overflow-hidden">
         {/* Mobile Header & Desktop Back Link */}
-        <div className="flex items-center justify-between w-full max-w-md mx-auto mb-6 shrink-0">
+        <div className="flex items-center justify-between w-full max-w-md mx-auto mb-2 sm:mb-3 shrink-0">
           <div className="lg:hidden">
             <VaultixLogo size="sm" />
           </div>
@@ -145,12 +140,12 @@ export default async function AuthLayout({
         </div>
 
         {/* Centered Auth Card Container */}
-        <div className="w-full max-w-md mx-auto my-auto py-4">
+        <div className="w-full max-w-md mx-auto my-auto py-1 sm:py-2">
           {children}
         </div>
 
         {/* Footer info */}
-        <div className="w-full max-w-md mx-auto pt-6 text-center text-xs text-light-4 shrink-0">
+        <div className="w-full max-w-md mx-auto pt-2 sm:pt-3 text-center text-[11px] text-light-4 shrink-0">
           <p>© {new Date().getFullYear()} Vaultix Inc. Enterprise Security Compliance.</p>
         </div>
       </main>

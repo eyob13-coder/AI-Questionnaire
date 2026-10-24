@@ -39,11 +39,7 @@ export class RagService {
   private readonly logger = new Logger(RagService.name);
 
   constructor(private configService: ConfigService) {
-    this.apiKey =
-      this.configService.get<string>('NVIDIA_API_KEY') ||
-      this.configService.get<string>('AI_INTEGRATIONS_OPENAI_API_KEY') ||
-      this.configService.get<string>('OPENAI_API_KEY') ||
-      '';
+    this.apiKey = this.configService.get<string>('NVIDIA_API_KEY') || '';
     this.baseURL =
       this.configService.get<string>('NVIDIA_BASE_URL') ||
       'https://integrate.api.nvidia.com/v1';
@@ -55,8 +51,9 @@ export class RagService {
     }
 
     this.completionModel =
+      this.configService.get<string>('NVIDIA_MODEL') ||
       this.configService.get<string>('OPENAI_COMPLETION_MODEL') ||
-      'z-ai/glm-5.2';
+      'nvidia/nemotron-3.5-super-vl-120b-a12b';
 
     const rawEmbeddingDimensions =
       this.configService.get<string>('EMBEDDING_DIMENSIONS') || '768';
@@ -85,7 +82,7 @@ export class RagService {
 
   /**
    * Dispatches a chat completion call directly using native fetch to the
-   * NVIDIA OpenAI-compatible REST endpoint without requiring external SDKs.
+   * NVIDIA Nemotron REST endpoint without requiring external SDKs.
    */
   private async callChatCompletion(
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
@@ -100,11 +97,8 @@ export class RagService {
       messages,
       temperature,
       max_tokens: 4096,
+      chat_template_kwargs: { enable_thinking: false },
     };
-
-    if (this.completionModel.includes('deepseek')) {
-      payload.chat_template_kwargs = { thinking: false };
-    }
 
     const url = `${this.baseURL.replace(/\/+$/, '')}/chat/completions`;
 
@@ -128,11 +122,14 @@ export class RagService {
     }
 
     const json: any = await response.json();
-    const content = json.choices?.[0]?.message?.content?.trim();
+    let content = json.choices?.[0]?.message?.content?.trim();
 
     if (!content) {
       throw new Error('NVIDIA AI returned empty completion content.');
     }
+
+    // Strip internal reasoning/thinking tags if model outputs them
+    content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
     return content;
   }

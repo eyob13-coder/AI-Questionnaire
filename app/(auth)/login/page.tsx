@@ -88,17 +88,17 @@ function LoginForm() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
+      transition={{ duration: 0.25 }}
+      className="space-y-4 sm:space-y-5"
     >
       {/* Title */}
       <div>
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-light tracking-tight">
+        <h1 className="font-heading text-xl sm:text-2xl font-bold text-light tracking-tight">
           Welcome back
         </h1>
-        <p className="text-light-3 text-sm mt-1.5">
+        <p className="text-light-3 text-xs sm:text-sm mt-1">
           Sign in to your Vaultix workspace to manage questionnaires.
         </p>
       </div>
@@ -108,16 +108,16 @@ function LoginForm() {
         type="button"
         onClick={handleGoogleSignIn}
         disabled={loading || isOffline}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.14] text-light text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shadow-sm"
+        className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.14] text-light text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.99]"
       >
-        <FontAwesomeIcon icon={byPrefixAndName.fab["google"]} className="w-4 h-4 text-brand" />
+        <FontAwesomeIcon icon={byPrefixAndName.fab["google"]} className="w-3.5 h-3.5 text-brand" />
         Continue with Google SSO
       </button>
 
       {/* Divider */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-white/[0.08]" />
-        <span className="text-[11px] font-mono uppercase tracking-wider text-light-4">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-light-4">
           or email
         </span>
         <div className="flex-1 h-px bg-white/[0.08]" />
@@ -125,17 +125,17 @@ function LoginForm() {
 
       {/* Error alert */}
       {error && (
-        <div className="p-3 rounded-xl bg-danger/10 border border-danger/20 text-xs text-danger flex items-center gap-2">
+        <div className="p-2.5 rounded-xl bg-danger/10 border border-danger/20 text-xs text-danger flex items-center gap-2">
           <FontAwesomeIcon icon={byPrefixAndName.fans["circle-exclamation"]} className="w-3.5 h-3.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         {/* Email */}
         <div>
-          <label className="block text-xs font-medium text-light-2 mb-1.5">
+          <label className="block text-xs font-medium text-light-2 mb-1">
             Work Email
           </label>
           <div className="relative">
@@ -156,7 +156,7 @@ function LoginForm() {
 
         {/* Password */}
         <div>
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center justify-between mb-1">
             <label className="text-xs font-medium text-light-2">Password</label>
             <Link
               href="/forgot-password"
@@ -195,7 +195,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-md shadow-brand/20 hover:shadow-brand/35 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
+          className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-md shadow-brand/20 hover:shadow-brand/35 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {loading ? (
             <FontAwesomeIcon icon={byPrefixAndName.fans["spinner"]} className="w-4 h-4 animate-spin" />
@@ -208,39 +208,8 @@ function LoginForm() {
         </button>
       </form>
 
-      {/* Demo Credentials Quick-Fill */}
-      <div className="p-3.5 rounded-xl bg-dark-3/40 border border-white/[0.05] space-y-2">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-light-4 font-semibold block">
-          Demo Test Accounts
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEmail("demo@vaultix.ai");
-              setPassword("DemoPassword123!");
-            }}
-            className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] text-[11px] text-light-3 hover:text-light transition text-left cursor-pointer"
-          >
-            <span className="font-semibold text-brand block">CISO Lead</span>
-            <span className="text-[10px] truncate block">demo@vaultix.ai</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEmail("security@vaultix.ai");
-              setPassword("SecurityPass123!");
-            }}
-            className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] text-[11px] text-light-3 hover:text-light transition text-left cursor-pointer"
-          >
-            <span className="font-semibold text-brand block">Sales Eng</span>
-            <span className="text-[10px] truncate block">security@vaultix.ai</span>
-          </button>
-        </div>
-      </div>
-
       {/* Switch to Register */}
-      <p className="text-center text-xs text-light-3">
+      <p className="text-center text-xs text-light-3 pt-1">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="text-brand font-semibold hover:text-brand-light transition">
           Start 14-day free trial

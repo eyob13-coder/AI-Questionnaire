@@ -1,47 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { MailerService as NestMailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
-  private transporter: nodemailer.Transporter | null = null;
   private readonly from: string;
+  private readonly hasSmtpConfig: boolean;
 
-  constructor() {
+  constructor(private readonly mailerService: NestMailerService) {
     this.from = process.env.EMAIL_FROM || 'Vaultix <noreply@vaultix.io>';
-    this.initTransporter();
-  }
-
-  private initTransporter() {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASSWORD;
-
-    if (!host || !user || !pass) {
-      this.logger.warn('SMTP configuration missing. Emails will not be sent.');
-      return;
-    }
-
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
+    this.hasSmtpConfig = Boolean(
+      process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASSWORD,
+    );
   }
 
   async sendInviteEmail(to: string, workspaceName: string, inviterName: string) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const loginUrl = `${appUrl}/login`;
 
-    if (!this.transporter) {
+    if (!this.hasSmtpConfig) {
       this.logger.warn(`\n=========================================`);
-      this.logger.warn(`[mailer] SMTP not configured. Simulated invitation email to: ${to}`);
-      this.logger.warn(`[mailer] Workspace: ${workspaceName}`);
-      this.logger.warn(`[mailer] Link: ${loginUrl}`);
+      this.logger.warn(`[@nestjs-modules/mailer] SMTP not configured. Simulated invitation email to: ${to}`);
+      this.logger.warn(`[@nestjs-modules/mailer] Workspace: ${workspaceName}`);
+      this.logger.warn(`[@nestjs-modules/mailer] Link: ${loginUrl}`);
       this.logger.warn(`=========================================\n`);
-      return;
     }
 
     const html = `
@@ -62,15 +46,30 @@ export class MailerService {
     `;
 
     try {
-      await this.transporter.sendMail({
+      await this.mailerService.sendMail({
         from: this.from,
         to,
         subject: `You have been invited to ${workspaceName} on Vaultix`,
         html,
       });
-      this.logger.log(`Invite email sent to ${to}`);
-    } catch (err) {
-      this.logger.error(`Failed to send invite email to ${to}`, err);
+      this.logger.log(`Invite email sent to ${to} via @nestjs-modules/mailer`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send invite email to ${to}: ${err?.message || err}`);
     }
+  }
+
+  /**
+   * General purpose email sender via @nestjs-modules/mailer
+   */
+  async sendMail(options: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+  }) {
+    return this.mailerService.sendMail({
+      from: this.from,
+      ...options,
+    });
   }
 }

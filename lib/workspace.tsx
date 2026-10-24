@@ -14,7 +14,9 @@ export interface Workspace {
     id: string;
     name: string;
     slug: string;
-    plan: "TRIAL" | "STARTER" | "PRO" | "ENTERPRISE";
+    plan: "FREE" | "TRIAL" | "STARTER" | "PRO" | "ENTERPRISE" | string;
+    subscriptionStatus?: string | null;
+    polarSubscriptionId?: string | null;
     trialEndsAt: string | null;
     createdAt: string;
     updatedAt: string;

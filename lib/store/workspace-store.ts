@@ -7,6 +7,10 @@ export interface WorkspaceItem {
   name: string;
   slug: string;
   plan?: string;
+  subscriptionStatus?: string | null;
+  polarSubscriptionId?: string | null;
+  trialEndsAt?: string | null;
+  createdAt?: string;
   _count?: {
     questionnaires?: number;
     documents?: number;
