@@ -1,54 +1,74 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark";
+
+export const THEME_STORAGE_KEY = "vaultix-theme";
+export const THEME_EVENT_NAME = "vaultix-theme-change";
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "dark",
   toggleTheme: () => {},
+  setTheme: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
+function getThemeSnapshot(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+  return saved === "light" ? "light" : "dark";
+}
+
+function subscribeTheme(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(THEME_EVENT_NAME, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(THEME_EVENT_NAME, callback);
+  };
+}
+
+export function applyTheme(next: Theme) {
+  if (typeof window === "undefined") return;
+  document.documentElement.setAttribute("data-theme", next);
+  if (next === "dark") {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
+  } else {
+    document.documentElement.classList.add("light");
+    document.documentElement.classList.remove("dark");
+  }
+  window.localStorage.setItem(THEME_STORAGE_KEY, next);
+  window.dispatchEvent(new Event(THEME_EVENT_NAME));
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "dark");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-      const saved = localStorage.getItem("shieldai-theme") as Theme | null;
-      if (saved) {
-        setTheme(saved);
-        document.documentElement.classList.toggle("light", saved === "light");
-      } else {
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const initial = prefersDark ? "dark" : "light";
-        setTheme(initial);
-        document.documentElement.classList.toggle("light", initial === "light");
-      }
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("shieldai-theme", next);
-    document.documentElement.classList.toggle("light", next === "light");
+    applyTheme(next);
   };
 
-  if (!mounted) return <>{children}</>;
+  const setTheme = (next: Theme) => {
+    applyTheme(next);
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

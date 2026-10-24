@@ -343,52 +343,80 @@ body {
 }
 
 /* ═══════════════════════════════════════════════
-   LIGHT THEME — Warm Parchment Palette
-   A premium, editorial feel — stone/cream tones
-   that attract enterprise buyers
+   LIGHT THEME — shadcn Zinc Palette
+   Clean, modern enterprise minimalist aesthetic
    ═══════════════════════════════════════════════ */
 
+:root,
+.light,
 [data-theme="light"] {
-  /* Surfaces — warm parchment progression */
-  --custom-dark: #F7F5F0;
-  --custom-dark-2: #EDE9E3;
-  --custom-dark-3: #E6E2DB;
-  --custom-dark-4: #DEDAC2;
-  --custom-dark-5: #D6D1C8;
+  /* shadcn standard variables */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 24.6 95% 53.1%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 24.6 95% 53.1%;
+  --radius: 0.75rem;
 
-  /* Text — warm stone scale */
-  --custom-light: #1C1917;
-  --custom-light-2: #44403C;
-  --custom-light-3: #78716C;
-  --custom-light-4: #A8A29E;
+  /* Surfaces — crisp shadcn Zinc light scale */
+  --custom-dark: #FFFFFF;
+  --custom-dark-2: #FAFAFA;
+  --custom-dark-3: #F4F4F5;
+  --custom-dark-4: #E4E4E7;
+  --custom-dark-5: #D4D4D8;
 
-  /* Status — richer for light background readability */
-  --custom-success: #15803D;
-  --custom-warning: #B45309;
-  --custom-danger: #B91C1C;
-  --custom-info: #1D4ED8;
+  /* Text — deep clean Zinc scale */
+  --custom-light: #09090B;
+  --custom-light-2: #27272A;
+  --custom-light-3: #71717A;
+  --custom-light-4: #A1A1AA;
+
+  /* Status */
+  --custom-success: #16A34A;
+  --custom-warning: #D97706;
+  --custom-danger: #DC2626;
+  --custom-info: #2563EB;
 }
 
+.light body,
 [data-theme="light"] body {
-  background-color: #F7F5F0;
-  color: #1C1917;
-  scrollbar-color: #D6D1C8 transparent;
+  background-color: #FFFFFF;
+  color: #09090B;
+  scrollbar-color: #E4E4E7 transparent;
 }
 
+.light ::-webkit-scrollbar-thumb,
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #D6D1C8;
+  background: #E4E4E7;
 }
 
+.light ::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #C9C4BA;
+  background: #D4D4D8;
 }
 
-/* Flip the texture patterns to use dark strokes on light bg */
+/* Flip texture patterns to subtle dark strokes on clean white bg */
+.light .bg-dots,
 [data-theme="light"] .bg-dots {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
+.light .bg-grid,
 [data-theme="light"] .bg-grid {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
@@ -397,31 +425,36 @@ body {
 }
 
 /* Glass surface */
+.light .glass,
 [data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.07);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.light .glass-hover:hover,
 [data-theme="light"] .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.14);
 }
 
 /* Softer glows on light bg */
+.light .glow-brand,
 [data-theme="light"] .glow-brand {
-  box-shadow: 0 0 40px rgba(249, 115, 22, 0.10),
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.12),
     0 0 80px rgba(249, 115, 22, 0.04);
 }
 
+.light .glow-brand-sm,
 [data-theme="light"] .glow-brand-sm {
   box-shadow: 0 0 20px rgba(249, 115, 22, 0.08);
 }
 
-/* Text gradient override so it reads on warm bg */
+/* Text gradient override so it reads on light bg */
+.light .text-gradient-white,
 [data-theme="light"] .text-gradient-white {
-  background: linear-gradient(180deg, #1C1917 0%, #78716C 100%);
+  background: linear-gradient(180deg, #09090B 0%, #71717A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -474,14 +507,16 @@ html.light [class*="border-overlay"] {
 }
 
 /* Input placeholder and focus rings */
+.light input::placeholder,
 [data-theme="light"] input::placeholder {
-  color: #A8A29E;
+  color: #71717A;
 }
 
-/* Selection highlight stays warm */
+/* Selection highlight */
+.light ::selection,
 [data-theme="light"] ::selection {
   background-color: rgba(249, 115, 22, 0.2);
-  color: #1C1917;
+  color: #09090B;
 }
 
 /* Smooth theme transition */

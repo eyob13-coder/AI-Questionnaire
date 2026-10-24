@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { FontAwesomeIcon, byPrefixAndName } from "@/lib/fontawesome";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardSearch from "@/components/layout/dashboard-search";
 import NotificationsMenu from "@/components/layout/notifications-menu";
 import { useSession } from "@/lib/auth-client";
 import { useAuthStore } from "@/lib/store";
+import { useTheme } from "@/components/theme-provider";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -23,43 +23,13 @@ const pageTitles: Record<string, string> = {
   "/dashboard/settings": "Settings",
 };
 
-const THEME_STORAGE_KEY = "vaultix-theme";
-const THEME_EVENT_NAME = "vaultix-theme-change";
-
-type ThemeMode = "dark" | "light";
-
-function resolveTheme(value: string | null): ThemeMode {
-  return value === "light" ? "light" : "dark";
-}
-
-function subscribeTheme(onStoreChange: () => void) {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-
-  const listener: EventListener = () => onStoreChange();
-
-  window.addEventListener("storage", listener);
-  window.addEventListener(THEME_EVENT_NAME, listener);
-
-  return () => {
-    window.removeEventListener("storage", listener);
-    window.removeEventListener(THEME_EVENT_NAME, listener);
-  };
-}
-
-function getThemeSnapshot(): ThemeMode {
-  if (typeof window === "undefined") return "dark";
-  return resolveTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
-}
-
 interface TopbarProps {
   onMenuClick?: () => void;
 }
 
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const pathname = usePathname();
-  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "dark");
+  const { theme, toggleTheme } = useTheme();
   const { data: sessionData } = useSession();
   const storeUser = useAuthStore((s) => s.user);
   const user = storeUser || sessionData?.user;
@@ -68,17 +38,6 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     user?.email?.split("@")[0] ||
     "Account";
   const userInitial = displayName.charAt(0).toUpperCase() || "A";
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    window.localStorage.setItem(THEME_STORAGE_KEY, next);
-    window.dispatchEvent(new Event(THEME_EVENT_NAME));
-  };
 
   const getTitle = () => {
     if (pageTitles[pathname]) return pageTitles[pathname];

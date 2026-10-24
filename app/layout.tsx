@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -63,8 +64,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  colorScheme: "dark",
-  themeColor: "#0b0f14",
+  colorScheme: "dark light",
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({
@@ -73,25 +74,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
-        <Toaster
-          position="top-right"
-          theme="dark"
-          closeButton
-          toastOptions={{
-            style: {
-              background: "#121215",
-              color: "#FAFAFA",
-              border: "none",
-              boxShadow: "0 16px 36px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05)",
-              borderRadius: "14px",
-              padding: "12px 16px",
-              fontSize: "13px",
-            },
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('vaultix-theme');
+                  var theme = saved === 'light' ? 'light' : 'dark';
+                  document.documentElement.setAttribute('data-theme', theme);
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                  } else {
+                    document.documentElement.classList.add('light');
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
           }}
         />
+      </head>
+      <body className="min-h-screen">
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+          <Toaster
+            position="top-right"
+            closeButton
+            toastOptions={{
+              style: {
+                background: "var(--color-dark-2, #18181b)",
+                color: "var(--color-light, #fafafa)",
+                border: "1px solid var(--color-dark-4, #27272a)",
+                boxShadow: "0 16px 36px -4px rgba(0, 0, 0, 0.4)",
+                borderRadius: "14px",
+                padding: "12px 16px",
+                fontSize: "13px",
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );
