@@ -7,17 +7,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { ThemeToggle } from "./theme-toggle";
-import { useTheme } from "@/components/theme-provider";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { data: session } = useSession();
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem("vaultix-theme") as "dark" | "light" | null;
+    const initial = saved ?? "dark";
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -25,6 +29,13 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("vaultix-theme", next);
+  };
 
   const navLinks = [
     { label: "Features", href: "#features" },
