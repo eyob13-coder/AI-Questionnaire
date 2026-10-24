@@ -53,6 +53,7 @@ const logger = new Logger('QueueModule');
             ...connectionConfig,
             enableOfflineQueue: false,
             maxRetriesPerRequest: null,
+            lazyConnect: true,
             retryStrategy: (times: number) => {
               if (isDisabled) return null;
               if (times > 2) return null;
@@ -82,11 +83,10 @@ export class QueueModule implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.docQueue.on('error', () => {
-      // Swallowed in local dev when Redis is offline
-    });
-    this.questQueue.on('error', () => {
-      // Swallowed in local dev when Redis is offline
-    });
+    const noop = () => {};
+    this.docQueue.on('error', noop);
+    this.questQueue.on('error', noop);
+    this.docQueue.client?.then?.((c: any) => c?.on?.('error', noop)).catch?.(noop);
+    this.questQueue.client?.then?.((c: any) => c?.on?.('error', noop)).catch?.(noop);
   }
 }

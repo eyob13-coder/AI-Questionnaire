@@ -33,10 +33,17 @@ export class KnowledgeService implements OnModuleInit, OnModuleDestroy {
   ) { }
 
   async onModuleInit() {
-    // Run an immediate reconciliation, then every minute. This recovers
+    // Run an immediate reconciliation safely, then every minute. This recovers
     // documents that finished chunking but never got their final
     // "status = READY" update (e.g. worker killed by a dev restart).
-    await this.reconcileStuckDocuments();
+    try {
+      await this.reconcileStuckDocuments();
+    } catch (err: any) {
+      this.logger.warn(
+        `Initial document reconciliation deferred (will retry in ${RECONCILE_INTERVAL_MS / 1000}s): ${err?.message || err}`,
+      );
+    }
+
     this.reconcileTimer = setInterval(
       () => {
         this.reconcileStuckDocuments().catch((err) =>

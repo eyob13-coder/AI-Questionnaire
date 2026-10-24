@@ -81,7 +81,7 @@ export class PrismaService
       ssl,
       max: Number.isNaN(poolMax) ? 10 : poolMax,
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 15_000,
+      connectionTimeoutMillis: 30_000,
       keepAlive: true,
       allowExitOnIdle: false,
     });
