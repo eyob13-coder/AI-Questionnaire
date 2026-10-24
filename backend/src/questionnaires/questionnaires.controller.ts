@@ -2,14 +2,18 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Delete,
+  Body,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   Param,
   ParseFilePipe,
   MaxFileSizeValidator,
-  Delete,
   Res,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,14 +29,43 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { QuestionnairesService } from './questionnaires.service';
+import { BillingService } from '../billing/billing.service';
+
+export class UpdateQuestionDto {
+  @IsOptional()
+  @IsString()
+  answerText?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  saveToVault?: boolean;
+}
 
 @ApiTags('Questionnaires')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('workspaces/:workspaceId/questionnaires')
 export class QuestionnairesController {
-  constructor(private readonly questionnairesService: QuestionnairesService) { }
+  constructor(
+    private readonly questionnairesService: QuestionnairesService,
+    private readonly billingService: BillingService,
+  ) { }
+
+  @Post('demo-sandbox')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({ summary: 'Spawn instant 25-question Acme Cloud SOC 2 demo questionnaire' })
+  async createDemoSandbox(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.questionnairesService.createDemoSandbox(workspaceId, userId);
+  }
 
   @Post('upload')
   @Roles(Role.OWNER, Role.EDITOR)
@@ -89,6 +122,40 @@ export class QuestionnairesController {
     );
   }
 
+  @Patch(':questionnaireId/questions/:questionId')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({ summary: 'Update a question answer, status, and optionally save to Knowledge Vault' })
+  async updateQuestion(
+    @Param('workspaceId') workspaceId: string,
+    @Param('questionnaireId') questionnaireId: string,
+    @Param('questionId') questionId: string,
+    @Body() body: UpdateQuestionDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.questionnairesService.updateQuestionAnswer(
+      workspaceId,
+      questionnaireId,
+      questionId,
+      body,
+      userId,
+    );
+  }
+
+  @Post(':questionnaireId/bulk-approve')
+  @Roles(Role.OWNER, Role.EDITOR)
+  @ApiOperation({ summary: 'Approve all verified & grounded answers (confidence >= 85%)' })
+  async bulkApproveVerified(
+    @Param('workspaceId') workspaceId: string,
+    @Param('questionnaireId') questionnaireId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.questionnairesService.bulkApproveVerified(
+      workspaceId,
+      questionnaireId,
+      userId,
+    );
+  }
+
   @Delete(':questionnaireId')
   @Roles(Role.OWNER, Role.EDITOR)
   @ApiOperation({
@@ -114,6 +181,24 @@ export class QuestionnairesController {
     @Param('questionnaireId') questionnaireId: string,
     @Res() res: Response,
   ) {
+    const isAllowed = await this.billingService.checkQuestionnaireExportAccess(
+      workspaceId,
+      questionnaireId,
+    );
+
+    if (!isAllowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.PAYMENT_REQUIRED,
+          error: 'Payment Required',
+          message:
+            'Questionnaire export requires an active Pro subscription or a Single Deal Pass.',
+          code: 'EXPORT_LOCKED',
+        },
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+
     const { buffer, fileName } = await this.questionnairesService.exportToExcel(
       workspaceId,
       questionnaireId,
@@ -129,3 +214,4 @@ export class QuestionnairesController {
     res.end(buffer);
   }
 }
+

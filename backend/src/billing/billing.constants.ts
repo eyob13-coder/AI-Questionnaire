@@ -1,3 +1,19 @@
+export enum PurchaseType {
+  SINGLE_PASS = 'SINGLE_PASS',
+  PRO_SUBSCRIPTION = 'PRO_SUBSCRIPTION',
+}
+
+export enum PlanTier {
+  FREE = 'FREE',
+  PRO = 'PRO',
+}
+
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  REFUNDED = 'REFUNDED',
+}
+
 export const PLAN_LIMITS: Record<
   string,
   {
@@ -11,8 +27,8 @@ export const PLAN_LIMITS: Record<
     hasSLA: boolean;
   }
 > = {
-  TRIAL: {
-    questions: 100,
+  FREE: {
+    questions: 250,
     questionnaires: 3,
     documents: 5,
     members: 3,
@@ -21,25 +37,25 @@ export const PLAN_LIMITS: Record<
     hasSSO: false,
     hasSLA: false,
   },
-  STARTER: {
-    questions: 500,
-    questionnaires: 5,
-    documents: 10,
-    members: 1,
-    price: '$49',
+  TRIAL: {
+    questions: 250,
+    questionnaires: 3,
+    documents: 5,
+    members: 3,
+    price: '$0',
     support: 'standard',
     hasSSO: false,
     hasSLA: false,
   },
   PRO: {
-    questions: 5000,
-    questionnaires: -1, // -1 indicates unlimited
+    questions: -1, // unlimited
+    questionnaires: -1, // unlimited
     documents: 100,
     members: 10,
-    price: '$149',
+    price: '$149/mo',
     support: 'priority',
     hasSSO: false,
-    hasSLA: false,
+    hasSLA: true,
   },
   ENTERPRISE: {
     questions: -1,
@@ -52,3 +68,27 @@ export const PLAN_LIMITS: Record<
     hasSLA: true,
   },
 };
+
+export const POLAR_PRICING: Record<
+  PurchaseType,
+  {
+    amountCents: number;
+    currency: string;
+    name: string;
+    description: string;
+  }
+> = {
+  [PurchaseType.SINGLE_PASS]: {
+    amountCents: 4900,
+    currency: 'usd',
+    name: 'Single Assessment Pass',
+    description: '1 Questionnaire unlocked forever + full spreadsheet export & compliance audit',
+  },
+  [PurchaseType.PRO_SUBSCRIPTION]: {
+    amountCents: 14900,
+    currency: 'usd',
+    name: 'Vaultix Pro (Unlimited)',
+    description: 'Unlimited questionnaires, instant exports, knowledge vault memory, and priority audit',
+  },
+};
+

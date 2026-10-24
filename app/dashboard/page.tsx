@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FileSpreadsheet,
@@ -11,10 +12,15 @@ import {
   Clock,
   TrendingUp,
   ArrowRight,
+  Sparkles,
+  Loader2,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useWorkspace } from "@/lib/workspace";
 import { apiGet } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
+import { useQuestionnaireStore } from "@/lib/store";
 import {
   WorkspaceGate,
   PageError,
@@ -52,6 +58,26 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { workspace } = useWorkspace();
+  const router = useRouter();
+
+  const createDemoSandbox = useQuestionnaireStore((s) => s.createDemoSandbox);
+  const isCreatingDemo = useQuestionnaireStore((s) => s.isCreatingDemo);
+
+  const handleLaunchDemo = async () => {
+    try {
+      const demo = await createDemoSandbox(workspaceId);
+      if (demo) {
+        toast.success("Loaded Acme Cloud SOC 2 Demo Sandbox!", {
+          description: "25 enterprise questions ready for ROI counter, triage, and export review.",
+        });
+        router.push(`/dashboard/questionnaires/${demo.id}`);
+      }
+    } catch (e) {
+      toast.error("Could not load demo questionnaire", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -124,13 +150,30 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
       >
-        <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">
-          Welcome back 👋
-        </h2>
-        <p className="text-light-2 mt-1">
-          {workspace?.name} · Here&apos;s what&apos;s happening today.
-        </p>
+        <div>
+          <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">
+            Welcome back 👋
+          </h2>
+          <p className="text-light-2 mt-1">
+            {workspace?.name} · Enterprise compliance workspace
+          </p>
+        </div>
+
+        {/* Feature 5 header action button */}
+        <button
+          onClick={handleLaunchDemo}
+          disabled={isCreatingDemo}
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl transition-colors cursor-pointer"
+        >
+          {isCreatingDemo ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          )}
+          <span>Try Demo Questionnaire (1-Click)</span>
+        </button>
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -181,7 +224,7 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
           </div>
           <div className="flex-1">
             <h3 className="font-heading text-base font-semibold">Knowledge Base</h3>
-            <p className="text-sm text-light-3">Manage your security documents</p>
+            <p className="text-sm text-light-3">Manage your security documents &amp; Vault</p>
           </div>
           <ArrowRight className="w-5 h-5 text-light-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
         </Link>
@@ -203,56 +246,93 @@ const DashboardContent = ({ workspaceId }: { workspaceId: string }) => {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-dark-4 overflow-hidden">
-          <div className="hidden sm:grid grid-cols-[1fr_100px_100px_120px] gap-4 px-5 py-3 bg-dark-3/50 text-xs font-semibold text-light-3 uppercase tracking-wider border-b border-dark-4">
-            <span>Name</span>
-            <span>Questions</span>
-            <span>Status</span>
-            <span>Updated</span>
-          </div>
-
-          {activity.length === 0 && (
-            <div className="px-5 py-12 text-center text-sm text-light-3">
-              No questionnaires yet. Upload one to get started.
+        {/* Feature 5: Instant Sample Deal Sandbox on Onboarding empty state */}
+        {activity.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-brand/30 bg-gradient-to-br from-brand/[0.04] via-dark-3/60 to-dark-3/30 p-8 sm:p-10 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-6 h-6 text-brand" />
             </div>
-          )}
 
-          {activity.map((q) => {
-            const cfg = statusConfig[q.status] || {
-              label: q.status,
-              class: "bg-light-4/10 text-light-3",
-            };
-            return (
-              <Link
-                key={q.id}
-                href={`/dashboard/questionnaires/${q.id}`}
-                className="group grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_120px] gap-2 sm:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
+            <h4 className="font-heading text-lg font-bold text-light">
+              Acme Cloud SaaS — SOC 2 Type II Assessment
+            </h4>
+            <p className="text-xs text-light-3 max-w-xl mx-auto mt-2 leading-relaxed">
+              Don&apos;t have your SOC 2 PDF or vendor Excel sheet handy? Experience our live ROI counter,
+              3-Bucket Triage, Split-Screen Evidence Inspector, and Excel Export in under 30 seconds
+              with a realistic pre-populated enterprise deal.
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={handleLaunchDemo}
+                disabled={isCreatingDemo}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-semibold text-white bg-brand hover:bg-brand-hover disabled:bg-brand/50 transition-all shadow-xl shadow-brand/20 cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="w-4 h-4 text-light-3 shrink-0 hidden sm:block" />
-                  <span className="text-sm text-light font-medium truncate group-hover:text-brand transition-colors">
-                    {q.name}
-                  </span>
-                </div>
-                <span className="text-sm text-light-2 font-mono">
-                  {q.totalQuestions}
-                </span>
-                <span
-                  className={`inline-block text-xs px-2.5 py-0.5 rounded-full font-medium w-fit ${cfg.class}`}
-                >
-                  {cfg.label}
-                </span>
-                <span className="text-xs text-light-3">
-                  {formatRelativeTime(q.updatedAt)}
-                </span>
+                {isCreatingDemo ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4" />
+                )}
+                {isCreatingDemo
+                  ? "Spawning Demo Sandbox..."
+                  : "Try Instant Demo Questionnaire (1-Click)"}
+              </button>
+
+              <Link
+                href="/dashboard/questionnaires/new"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-xs font-medium text-light-3 hover:text-light bg-dark-4 hover:bg-dark-5 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload Your Own File</span>
               </Link>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dark-4 overflow-hidden">
+            <div className="hidden sm:grid grid-cols-[1fr_100px_100px_120px] gap-4 px-5 py-3 bg-dark-3/50 text-xs font-semibold text-light-3 uppercase tracking-wider border-b border-dark-4">
+              <span>Name</span>
+              <span>Questions</span>
+              <span>Status</span>
+              <span>Updated</span>
+            </div>
+
+            {activity.map((q) => {
+              const cfg = statusConfig[q.status] || {
+                label: q.status,
+                class: "bg-light-4/10 text-light-3",
+              };
+              return (
+                <Link
+                  key={q.id}
+                  href={`/dashboard/questionnaires/${q.id}`}
+                  className="group grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_120px] gap-2 sm:gap-4 px-5 py-4 border-b border-dark-4/60 hover:bg-white/[0.02] transition-colors items-center"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileSpreadsheet className="w-4 h-4 text-light-3 shrink-0 hidden sm:block" />
+                    <span className="text-sm text-light font-medium truncate group-hover:text-brand transition-colors">
+                      {q.name}
+                    </span>
+                  </div>
+                  <span className="text-sm text-light-2 font-mono">
+                    {q.totalQuestions}
+                  </span>
+                  <span
+                    className={`inline-block text-xs px-2.5 py-0.5 rounded-full font-medium w-fit ${cfg.class}`}
+                  >
+                    {cfg.label}
+                  </span>
+                  <span className="text-xs text-light-3">
+                    {formatRelativeTime(q.updatedAt)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
     </div>
   );
-}
+};
 
 export default function DashboardPage() {
   return <WorkspaceGate>{(id) => <DashboardContent workspaceId={id} />}</WorkspaceGate>;

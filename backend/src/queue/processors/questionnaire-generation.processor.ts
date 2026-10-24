@@ -121,6 +121,8 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
     answerText: string | null;
     confidence: number | null;
     status: 'DRAFT' | 'REVIEW' | 'APPROVED';
+    auditorCritique?: string | null;
+    verifiedFromVault?: boolean;
   }) {
     const {
       questionnaireId,
@@ -129,6 +131,8 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
       answerText,
       confidence,
       status,
+      auditorCritique,
+      verifiedFromVault,
     } = params;
 
     const updated = await this.prisma.question.updateMany({
@@ -141,6 +145,8 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
         answerText,
         confidence,
         status,
+        auditorCritique: auditorCritique ?? null,
+        verifiedFromVault: verifiedFromVault ?? false,
       },
     });
 
@@ -153,6 +159,8 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
           answerText,
           confidence,
           status,
+          auditorCritique: auditorCritique ?? null,
+          verifiedFromVault: verifiedFromVault ?? false,
         },
       });
     }
@@ -196,6 +204,60 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
           const actualIndex = i + batchIdx;
 
           try {
+            // Feature 4: "Fix Once, Remember Forever" (Knowledge Vault Memory Loop)
+            // If an answer was previously approved by the team in the Knowledge Vault, retrieve it first with "Previously Approved by Your Team"
+            const vaultItems = await this.prisma.knowledgeVaultItem.findMany({
+              where: { workspaceId },
+              orderBy: { lastVerifiedAt: 'desc' },
+              take: 50,
+            });
+
+            let matchedVault = null;
+            const cleanQ = questionText.toLowerCase().trim();
+            for (const item of vaultItems) {
+              const itemQ = item.questionText.toLowerCase().trim();
+              if (cleanQ === itemQ || cleanQ.includes(itemQ) || itemQ.includes(cleanQ)) {
+                matchedVault = item;
+                break;
+              }
+              const qWords = cleanQ.split(/\s+/).filter((w) => w.length > 4);
+              const matchedWords = qWords.filter((w) => itemQ.includes(w));
+              if (qWords.length >= 3 && matchedWords.length / qWords.length >= 0.7) {
+                matchedVault = item;
+                break;
+              }
+            }
+
+            if (matchedVault) {
+              await this.saveAnswerForRow({
+                questionnaireId,
+                rowIndex: actualIndex,
+                questionText,
+                answerText: matchedVault.answerText,
+                confidence: 99,
+                status: 'APPROVED',
+                auditorCritique: 'Previously Approved by Your Team in Knowledge Vault',
+                verifiedFromVault: true,
+              });
+
+              const qRow = await this.prisma.question.findFirst({
+                where: { questionnaireId, rowIndex: actualIndex },
+              });
+              if (qRow) {
+                await this.prisma.citation.create({
+                  data: {
+                    questionId: qRow.id,
+                    sourceDocument: 'Workspace Knowledge Vault (Human Verified)',
+                    pageNumber: 1,
+                    excerpt: `Verified by team member: "${matchedVault.answerText.slice(0, 160)}"`,
+                  },
+                });
+              }
+
+              answeredCount++;
+              return;
+            }
+
             let contextTexts: string[] = [];
 
             if (vectorSearchAvailable) {
@@ -228,16 +290,27 @@ export class QuestionnaireGenerationProcessor extends WorkerHost {
 
             const result = await this.ragService.generateAnswer(questionText, contextTexts);
 
+            // STRICT GUARDRAIL: Never display a guessed or hallucinated answer when confidence is < 50% or unsupported
+            const isMissingEvidence = result.confidence < 50 || result.auditStatus === 'UNSUPPORTED';
+            const finalAnswer = isMissingEvidence ? null : result.answer;
+            const finalCritique = isMissingEvidence
+              ? 'Vaultix refused to guess because no uploaded document covers this topic.'
+              : result.auditNotes || 'Verified by Dual-Model Audit against cited documentation.';
+
             await this.saveAnswerForRow({
               questionnaireId,
               rowIndex: actualIndex,
               questionText,
-              answerText: result.answer,
+              answerText: finalAnswer,
               confidence: result.confidence,
-              status: result.confidence > 85 ? 'APPROVED' : 'REVIEW',
+              status: isMissingEvidence ? 'DRAFT' : result.confidence >= 85 ? 'APPROVED' : 'REVIEW',
+              auditorCritique: finalCritique,
+              verifiedFromVault: false,
             });
 
-            answeredCount++;
+            if (finalAnswer !== null) {
+              answeredCount++;
+            }
           } catch (questionError) {
             if (questionError instanceof AiQuotaExceededError) {
               quotaBlocked = true;

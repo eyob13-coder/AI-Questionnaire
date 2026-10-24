@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -98,19 +99,26 @@ model TrialClaim {
 }
 
 model Workspace {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  plan           Plan     @default(TRIAL)
-  trialEndsAt    DateTime? @map("trial_ends_at")
-  stripeCustomerId String? @map("stripe_customer_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  plan                PlanTier             @default(FREE)
+  exportCredits       Int                  @default(0) @map("export_credits")
+  polarCustomerId     String?              @unique @map("polar_customer_id")
+  polarSubscriptionId String?              @unique @map("polar_subscription_id")
+  subscriptionStatus  String?              @map("subscription_status")
+  currentPeriodEnd    DateTime?            @map("current_period_end")
+  trialEndsAt         DateTime?            @map("trial_ends_at")
+  stripeCustomerId    String?              @map("stripe_customer_id")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
 
-  members        WorkspaceMember[]
-  documents      Document[]
-  questionnaires Questionnaire[]
-  auditLogs      AuditLog[]
+  members             WorkspaceMember[]
+  documents           Document[]
+  questionnaires      Questionnaire[]
+  auditLogs           AuditLog[]
+  knowledgeVaultItems KnowledgeVaultItem[]
+  billingOrders       BillingOrder[]
 
   @@map("workspaces")
 }
@@ -169,23 +177,45 @@ model DocumentChunk {
 // ─── Questionnaires ───
 
 model Questionnaire {
-  id             String   @id @default(cuid())
+  id             String              @id @default(cuid())
   name           String
-  fileName       String   @map("file_name")
-  fileType       String   @map("file_type")
+  fileName       String              @map("file_name")
+  fileType       String              @map("file_type")
   status         QuestionnaireStatus @default(PROCESSING)
-  totalQuestions Int      @default(0) @map("total_questions")
-  answeredCount  Int      @default(0) @map("answered_count")
-  approvedCount  Int      @default(0) @map("approved_count")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  totalQuestions Int                 @default(0) @map("total_questions")
+  answeredCount  Int                 @default(0) @map("answered_count")
+  approvedCount  Int                 @default(0) @map("approved_count")
+  isUnlocked     Boolean             @default(false) @map("is_unlocked")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
 
-  workspaceId    String   @map("workspace_id")
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId    String              @map("workspace_id")
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   questions      Question[]
+  billingOrders  BillingOrder[]
 
   @@map("questionnaires")
+}
+
+model BillingOrder {
+  id              String        @id @default(cuid())
+  workspaceId     String        @map("workspace_id")
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  questionnaireId String?       @map("questionnaire_id")
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id], onDelete: SetNull)
+  polarCheckoutId String        @unique @map("polar_checkout_id")
+  polarOrderId    String?       @unique @map("polar_order_id")
+  purchaseType    PurchaseType  @map("purchase_type")
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("usd")
+  status          OrderStatus   @default(PENDING)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([workspaceId])
+  @@index([questionnaireId])
+  @@map("billing_orders")
 }
 
 model Question {
@@ -195,6 +225,8 @@ model Question {
   confidence     Float?
   status         AnswerStatus @default(DRAFT)
   rowIndex       Int      @map("row_index")
+  auditorCritique String? @map("auditor_critique")
+  verifiedFromVault Boolean @default(false) @map("verified_from_vault")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -216,6 +248,21 @@ model Citation {
   question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@map("citations")
+}
+
+model KnowledgeVaultItem {
+  id             String   @id @default(cuid())
+  workspaceId    String   @map("workspace_id")
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  questionText   String   @map("question_text")
+  answerText     String   @map("answer_text")
+  status         String   @default("HUMAN_VERIFIED")
+  lastVerifiedAt DateTime @default(now()) @map("last_verified_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([workspaceId])
+  @@map("knowledge_vault_items")
 }
 
 // ─── Audit Log ───
@@ -257,11 +304,27 @@ enum Role {
   VIEWER
 }
 
+enum PlanTier {
+  FREE
+  PRO
+}
+
 enum Plan {
   TRIAL
   STARTER
   PRO
   ENTERPRISE
+}
+
+enum PurchaseType {
+  SINGLE_PASS
+  PRO_SUBSCRIPTION
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  REFUNDED
 }
 
 enum DocumentStatus {

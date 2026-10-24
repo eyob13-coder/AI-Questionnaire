@@ -25,7 +25,7 @@ const getQueueModuleImports = () => {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', 'backend/.env', '../backend/.env'],
     }),
     PrismaModule,
     RedisModule,

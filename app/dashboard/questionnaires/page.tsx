@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileSpreadsheet,
   Plus,
@@ -10,8 +11,10 @@ import {
   AlertTriangle,
   Loader2,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
 import { useQuestionnaireStore } from "@/lib/store";
 import {
@@ -33,9 +36,12 @@ const statusConfig: Record<
 };
 
 function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
+  const router = useRouter();
   const items = useQuestionnaireStore((s) => s.questionnaires);
   const fetchQuestionnaires = useQuestionnaireStore((s) => s.fetchQuestionnaires);
   const deleteQuestionnaire = useQuestionnaireStore((s) => s.deleteQuestionnaire);
+  const createDemoSandbox = useQuestionnaireStore((s) => s.createDemoSandbox);
+  const isCreatingDemo = useQuestionnaireStore((s) => s.isCreatingDemo);
   const loading = useQuestionnaireStore((s) => s.isLoading);
   const error = useQuestionnaireStore((s) => s.error);
 
@@ -90,13 +96,38 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
             {items.length} total questionnaire{items.length === 1 ? "" : "s"}
           </p>
         </div>
-        <Link
-          href="/dashboard/questionnaires/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
-        >
-          <Plus className="w-4 h-4" />
-          New Questionnaire
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={async () => {
+              try {
+                const demo = await createDemoSandbox(workspaceId);
+                if (demo) {
+                  toast.success("Loaded Acme Cloud SOC 2 Demo Sandbox!");
+                  router.push(`/dashboard/questionnaires/${demo.id}`);
+                }
+              } catch {
+                toast.error("Failed to load demo");
+              }
+            }}
+            disabled={isCreatingDemo}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl transition-colors cursor-pointer"
+          >
+            {isCreatingDemo ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            )}
+            <span>Try Instant Demo (1-Click)</span>
+          </button>
+
+          <Link
+            href="/dashboard/questionnaires/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-full transition-all hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+          >
+            <Plus className="w-4 h-4" />
+            New Questionnaire
+          </Link>
+        </div>
       </motion.div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -137,10 +168,35 @@ function QuestionnairesContent({ workspaceId }: { workspaceId: string }) {
         </div>
 
         {filtered.length === 0 && (
-          <div className="px-5 py-12 text-center text-light-3 text-sm">
-            {items.length === 0
-              ? "No questionnaires yet — upload one to get started."
-              : "No questionnaires match your filters."}
+          <div className="px-5 py-14 text-center">
+            {items.length === 0 ? (
+              <div className="max-w-md mx-auto space-y-3">
+                <p className="text-light-2 font-medium text-sm">No questionnaires yet</p>
+                <p className="text-light-4 text-xs">
+                  Experience our 3-Bucket Triage, live ROI counter, and Split-Screen Evidence Inspector in 10 seconds.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const demo = await createDemoSandbox(workspaceId);
+                      if (demo) {
+                        toast.success("Loaded Acme Cloud SOC 2 Demo Sandbox!");
+                        router.push(`/dashboard/questionnaires/${demo.id}`);
+                      }
+                    } catch {
+                      toast.error("Failed to load demo");
+                    }
+                  }}
+                  disabled={isCreatingDemo}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-brand hover:bg-brand-hover transition-all cursor-pointer mt-2"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Try Instant Demo Questionnaire (1-Click)
+                </button>
+              </div>
+            ) : (
+              <span className="text-light-3 text-sm">No questionnaires match your filters.</span>
+            )}
           </div>
         )}
 
